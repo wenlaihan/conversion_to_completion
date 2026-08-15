@@ -1,0 +1,354 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Temperature | Kinetics Estimator</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed": "#ffdbcc",
+                      "science-green": "#218242",
+                      "on-primary": "#ffffff",
+                      "warning-amber": "#D97706",
+                      "on-error-container": "#93000a",
+                      "surface-offwhite": "#F9F9F7",
+                      "surface-bright": "#f9f9ff",
+                      "primary-container": "#1c398e",
+                      "outline": "#757683",
+                      "on-secondary-fixed-variant": "#005323",
+                      "primary": "#002271",
+                      "surface-variant": "#dce2f7",
+                      "surface-container-highest": "#dce2f7",
+                      "inverse-surface": "#293040",
+                      "surface-dim": "#d3daef",
+                      "primary-fixed-dim": "#b6c4ff",
+                      "surface": "#f9f9ff",
+                      "on-primary-fixed": "#001550",
+                      "tertiary-fixed-dim": "#ffb695",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed-variant": "#254095",
+                      "secondary": "#006d31",
+                      "on-tertiary-fixed": "#351000",
+                      "primary-fixed": "#dce1ff",
+                      "secondary-container": "#96f4a7",
+                      "on-secondary": "#ffffff",
+                      "hairline-border": "#E5E7EB",
+                      "tertiary": "#4d1a00",
+                      "on-surface-variant": "#444652",
+                      "surface-tint": "#3f59ae",
+                      "on-secondary-container": "#047234",
+                      "on-background": "#141b2b",
+                      "outline-variant": "#c5c5d3",
+                      "on-tertiary-fixed-variant": "#793005",
+                      "on-secondary-fixed": "#00210a",
+                      "inverse-on-surface": "#edf0ff",
+                      "background": "#f9f9ff",
+                      "inverse-primary": "#b6c4ff",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-container": "#712a00",
+                      "on-primary-container": "#91a8ff",
+                      "error": "#ba1a1a",
+                      "surface-container-low": "#f1f3ff",
+                      "surface-container-high": "#e1e8fd",
+                      "surface-container": "#e9edff",
+                      "secondary-fixed": "#99f7aa",
+                      "error-container": "#ffdad6",
+                      "on-surface": "#141b2b",
+                      "on-tertiary-container": "#f89261",
+                      "deep-teal": "#1C398E",
+                      "secondary-fixed-dim": "#7dda90",
+                      "on-tertiary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "margin": "32px",
+                      "gutter": "24px",
+                      "container-max": "1200px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Inter"],
+                      "data-mono": ["JetBrains Mono"],
+                      "body-lg": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "body-md": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "data-mono": ["14px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "body-md": ["15px", {"lineHeight": "1.5", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+        .input-group { position: relative; }
+        .input-group input, .input-group select { 
+            width: 100%; border: 1px solid #E5E7EB; border-radius: 0.25rem; padding: 12px 16px; background-color: #ffffff;
+            font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; color: #141b2b; outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .input-group input:focus, .input-group select:focus {
+            border-color: #1C398E; box-shadow: inset 0 0 0 1px #1C398E;
+        }
+        .input-group label {
+            position: absolute; top: -8px; left: 12px; background-color: #ffffff; padding: 0 4px;
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; line-height: 1; letter-spacing: 0.05em; color: #757683; text-transform: uppercase;
+        }
+        .input-group input:focus + label { color: #1C398E; }
+        .input-group .unit {
+            position: absolute; right: 16px; top: 14px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; color: #757683; pointer-events: none;
+        }
+        
+        .segment-control { display: flex; border: 1px solid #E5E7EB; border-radius: 0.25rem; overflow: hidden; background-color: #ffffff; }
+        .segment-control button {
+            flex: 1; padding: 8px 12px; border-right: 1px solid #E5E7EB; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: #444652; background: transparent; transition: background-color 0.15s, color 0.15s;
+        }
+        .segment-control button:last-child { border-right: none; }
+        .segment-control button.active { background-color: #e9edff; color: #1C398E; }
+        .segment-control button:hover:not(.active) { background-color: #f9f9ff; }
+
+        .plot-container { position: relative; height: 280px; width: 100%; border-left: 1px solid #444652; border-bottom: 1px solid #444652; margin-left: 40px; margin-bottom: 40px; }
+        .plot-axis-label { position: absolute; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: #444652; }
+        .y-axis-label { transform: rotate(-90deg); transform-origin: left top; left: -32px; top: 50%; }
+        .x-axis-label { bottom: -32px; left: 50%; transform: translateX(-50%); }
+        .plot-line { position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; border-bottom: 2px dashed #outline-variant; transform: rotate(-15deg); transform-origin: left bottom; pointer-events: none;}
+        .plot-point { position: absolute; width: 8px; height: 8px; background-color: #1C398E; border-radius: 50%; transform: translate(-50%, 50%); }
+        .plot-tick-y { position: absolute; left: -6px; width: 6px; height: 1px; background-color: #444652; }
+        .plot-tick-x { position: absolute; bottom: -6px; width: 1px; height: 6px; background-color: #444652; }
+        .plot-tick-label { position: absolute; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #757683; }
+      </style>
+</head>
+<body class="bg-surface-offwhite text-on-surface font-body-md min-h-screen flex selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-inverse-surface border-r border-hairline-border dark:border-outline-variant h-screen w-64 fixed left-0 top-0 flex flex-col h-full py-unit-margin z-50">
+<div class="px-gutter mb-margin"><h1 class="font-headline-md text-headline-md font-semibold text-deep-teal dark:text-primary-fixed-dim">Kinetics Estimator</h1>
+<p class="text-on-surface-variant font-label-caps text-label-caps mt-unit">Precision Analysis</p></div>
+<ul class="flex-1 px-unit">
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">calculate</span>
+                    Estimate
+                </a>
+</li>
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">compare_arrows</span>
+                    Compare Orders
+                </a>
+</li>
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-deep-teal dark:text-primary-fixed-dim font-bold border-r-2 border-deep-teal dark:border-primary-fixed-dim bg-surface-container-low dark:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">thermostat</span>
+                    Temperature
+                </a>
+</li>
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">leaderboard</span>
+                    Fit Data
+                </a>
+</li>
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">library_books</span>
+                    Reference
+                </a>
+</li>
+</ul>
+<div class="px-gutter mt-auto flex items-center">
+<img class="w-8 h-8 rounded-full border border-hairline-border mr-3 object-cover" data-alt="A small circular avatar placeholder image showing a subtle silhouette of a scientist in a lab coat, designed in a minimalist high-key off-white and deep teal color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCU7ipwxvYfeaoQx-QrWk5ptyGzn4VuMQUeWY55Mh2ZjsaNhv_Yon3PDQ0z8fn2juNkc1MuBPGBnjishCbpJKVIO7CWa36WqGYiatXPXaVuDSLwSenTo_YRtCfm4I85Oa7n6QXIBx1Z4tJGmoD0ULdWcFsn5c48oqSoGIdE2Ksf1Ae1XSnyF-QYmgjEmp2N3wglLkiPG8MCqhgXaCCnPIqsLXiPpMQ1t4-TkL3h5fvI9FO0XXWAmCmr">
+<span class="font-data-mono text-data-mono text-on-surface-variant">User</span>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 p-margin max-w-container-max mx-auto">
+<header class="mb-margin border-b border-hairline-border pb-unit-4 flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Temperature Projection</h2>
+<p class="font-body-lg text-body-lg text-outline mt-unit-2">Predict reaction kinetics across thermal gradients.</p>
+</div>
+<div class="flex gap-unit-4">
+<button class="px-unit-6 py-unit-2 rounded bg-surface-lowest border border-deep-teal text-deep-teal font-label-caps text-label-caps hover:bg-surface-container-high transition-colors">Reset</button>
+<button class="px-unit-6 py-unit-2 rounded bg-deep-teal text-on-primary font-label-caps text-label-caps hover:bg-primary transition-colors flex items-center gap-unit-2">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span> Calculate
+                 </button>
+</div>
+</header>
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Left Column: Inputs -->
+<div class="col-span-12 md:col-span-5 flex flex-col gap-gutter">
+<section class="bg-surface-container-lowest border border-hairline-border rounded-lg p-gutter">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-gutter">Predict at a different temperature</h3>
+<div class="flex flex-col gap-margin">
+<div class="input-group">
+<input class="bg-surface-offwhite cursor-default text-outline" id="measured-temp" readonly="" type="text" value="25">
+<label for="measured-temp" class="">Measured Temperature (T1)</label>
+<span class="unit">°C</span>
+</div>
+<div class="flex gap-unit-4 items-end">
+<div class="input-group flex-1">
+<input id="target-temp" step="0.1" type="number" value="40">
+<label for="target-temp" class="">Target Temperature (T2)</label>
+</div>
+<div class="input-group w-24 shrink-0">
+<select class="appearance-none pr-8" id="temp-unit">
+<option value="C">°C</option>
+<option value="K">K</option>
+<option value="F">°F</option>
+</select>
+<label class="sr-only" for="temp-unit">Unit</label>
+<span class="material-symbols-outlined absolute right-2 top-3 text-outline pointer-events-none" style="font-size: 20px;">expand_more</span>
+</div>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps text-outline mb-unit-2">Methodology</span>
+<div class="segment-control">
+<button class="active" type="button">I know Ea</button>
+<button type="button" class="">Fit from data</button>
+<button type="button" class="">Estimate (Q10)</button>
+</div>
+</div>
+<div class="input-group">
+<input id="activation-energy" type="number" value="50.2">
+<label for="activation-energy" class="">Activation Energy (Ea)</label>
+<span class="unit">kJ/mol</span>
+</div>
+</div>
+</section>
+<section class="bg-surface-container-low border border-hairline-border rounded-lg p-gutter">
+<div class="flex items-center gap-unit-3 mb-unit-2">
+<span class="material-symbols-outlined text-deep-teal" style="font-variation-settings: &quot;FILL&quot; 1;">info</span>
+<h4 class="font-headline-md text-[16px] text-on-surface">Arrhenius Equation</h4>
+</div>
+<div class="font-data-mono text-data-mono text-center py-unit-4 text-on-surface-variant bg-surface-container-lowest border border-hairline-border rounded">
+                         k = A * e^(-Ea / RT)
+                     </div>
+</section>
+</div>
+<!-- Right Column: Results & Plot -->
+<div class="col-span-12 md:col-span-7 flex flex-col gap-gutter">
+<section class="bg-surface-container-lowest border border-hairline-border rounded-lg p-gutter">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-gutter">Temperature Comparison</h3>
+<div class="flex items-center justify-between bg-[#fffbeb] border border-[#fde68a] rounded-lg p-unit-3 mb-gutter">
+  <div class="flex items-center gap-unit-2 text-[#92400e] font-body-md">
+    <span class="material-symbols-outlined text-[20px]">warning</span>
+    <span class="">Extrapolating 45 °C beyond your measurement — Arrhenius behaviour often breaks down over wide temperature ranges.</span>
+  </div>
+  <a href="#" class="text-[#92400e] font-label-caps text-label-caps underline hover:opacity-80">Why this matters</a>
+</div><div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-offwhite border-b border-hairline-border">
+<th class="p-unit-3 font-label-caps text-label-caps text-on-surface-variant">Conversion Target</th>
+<th class="p-unit-3 font-label-caps text-label-caps text-on-surface-variant">Time at T1 (25°C)</th>
+<th class="p-unit-3 font-label-caps text-label-caps text-on-surface-variant">Time at T2 (40°C)</th>
+<th class="p-unit-3 font-label-caps text-label-caps text-on-surface-variant text-right">Speed-up Factor</th>
+</tr>
+</thead>
+<tbody class="font-data-mono text-data-mono text-on-surface">
+<tr class="border-b border-hairline-border hover:bg-surface-bright">
+<td class="p-unit-3">10%</td>
+<td class="p-unit-3">15.2 min</td>
+<td class="p-unit-3 font-bold text-deep-teal">5.8 min</td>
+<td class="p-unit-3 text-right">
+<span class="inline-flex items-center px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed text-xs font-bold">2.6x</span>
+</td>
+</tr>
+<tr class="border-b border-hairline-border hover:bg-surface-bright">
+<td class="p-unit-3">50%</td>
+<td class="p-unit-3">120.5 min</td>
+<td class="p-unit-3 font-bold text-deep-teal">45.2 min</td>
+<td class="p-unit-3 text-right">
+<span class="inline-flex items-center px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed text-xs font-bold">2.6x</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright">
+<td class="p-unit-3">90%</td>
+<td class="p-unit-3">350.0 min</td>
+<td class="p-unit-3 font-bold text-deep-teal">131.5 min</td>
+<td class="p-unit-3 text-right">
+<span class="inline-flex items-center px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed text-xs font-bold">2.6x</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="bg-surface-container-lowest border border-hairline-border rounded-lg p-gutter flex-1 flex flex-col">
+<div class="flex justify-between items-center mb-margin">
+<h3 class="font-headline-md text-headline-md text-on-surface">Arrhenius Plot</h3>
+<span class="font-label-caps text-label-caps text-outline border border-hairline-border px-unit-2 py-unit-1 rounded bg-surface-offwhite">Theoretical Projection</span>
+</div>
+<div class="flex-1 flex items-center justify-center pt-margin pr-margin pb-margin pl-12">
+<div class="plot-container">
+<div class="plot-axis-label y-axis-label">ln k (min⁻¹)</div>
+<div class="plot-axis-label x-axis-label">1/T (K⁻¹ × 10³)</div>
+<!-- Y-axis ticks -->
+<div class="plot-tick-y" style="top: 0%;"></div>
+<div class="plot-tick-label right-full mr-2" style="top: -6px;">-2.0</div>
+<div class="plot-tick-y" style="top: 25%;"></div>
+<div class="plot-tick-label right-full mr-2" style="top: calc(25% - 6px);">-3.0</div>
+<div class="plot-tick-y" style="top: 50%;"></div>
+<div class="plot-tick-label right-full mr-2" style="top: calc(50% - 6px);">-4.0</div>
+<div class="plot-tick-y" style="top: 75%;"></div>
+<div class="plot-tick-label right-full mr-2" style="top: calc(75% - 6px);">-5.0</div>
+<div class="plot-tick-y" style="top: 100%;"></div>
+<div class="plot-tick-label right-full mr-2" style="top: calc(100% - 6px);">-6.0</div>
+<!-- X-axis ticks -->
+<div class="plot-tick-x" style="left: 0%;"></div>
+<div class="plot-tick-label" style="left: -10px; bottom: -24px;">3.1</div>
+<div class="plot-tick-x" style="left: 25%;"></div>
+<div class="plot-tick-label" style="left: calc(25% - 10px); bottom: -24px;">3.2</div>
+<div class="plot-tick-x" style="left: 50%;"></div>
+<div class="plot-tick-label" style="left: calc(50% - 10px); bottom: -24px;">3.3</div>
+<div class="plot-tick-x" style="left: 75%;"></div>
+<div class="plot-tick-label" style="left: calc(75% - 10px); bottom: -24px;">3.4</div>
+<div class="plot-tick-x" style="left: 100%;"></div>
+<div class="plot-tick-label" style="left: calc(100% - 10px); bottom: -24px;">3.5</div>
+<!-- The Line & Points -->
+<!-- y = mx + c representation -->
+<svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+<line stroke="#outline-variant" stroke-dasharray="4 4" stroke-width="1.5" x1="10%" x2="90%" y1="90%" y2="10%"></line>
+<line stroke="#1C398E" stroke-width="2" x1="10%" x2="60%" y1="90%" y2="40%"></line>
+</svg>
+<!-- T1 Point (25C = 298K -> 1/T = 3.35) -->
+<div class="plot-point group cursor-pointer" style="left: 60%; top: 40%;">
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-inverse-surface text-on-primary px-3 py-2 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+<span class="font-bold">T1: 25°C</span><br>
+                                    1/T: 3.35 × 10³ K⁻¹<br>
+                                    ln k: -3.8
+                                </div>
+</div>
+<!-- T2 Point (40C = 313K -> 1/T = 3.19) -->
+<div class="plot-point group cursor-pointer" style="left: 25%; top: 75%; background-color: #218242; width: 10px; height: 10px;">
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-inverse-surface text-on-primary px-3 py-2 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+<span class="font-bold text-secondary-fixed">T2: 40°C</span><br>
+                                    1/T: 3.19 × 10³ K⁻¹<br>
+                                    ln k: -2.8
+                                </div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+
+
+</body></html>

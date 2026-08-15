@@ -1,0 +1,964 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RxnClock: Time to Completion</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   BOUND DESIGN SYSTEM, from stitch_kinetics_estimator/.../DESIGN.md
+   Colours, 4px baseline, 4/6/pill radii, no shadows, no gradients,
+   single light theme. Inter for language, Asana Math for quantity.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Vendored, Apostolos Syropoulos, SIL OFL 1.1, see fonts/NOTICE.txt */
+@font-face{font-family:"Asana Math";src:url("./fonts/Asana-Math.otf") format("opentype");
+  font-weight:400;font-style:normal;font-display:swap}
+
+:root{
+  color-scheme:light;
+  --surface:#f9f9ff; --lowest:#ffffff; --low:#f1f3ff; --container:#e9edff;
+  --high:#e1e8fd; --highest:#dce2f7;
+  --on-surface:#141b2b; --on-variant:#414350; --outline:#5c5d6b; --outline-variant:#c5c5d3;
+  --primary:#002271; --primary-container:#1c398e; --on-primary:#ffffff;
+  --deep-teal:#1C398E; --science-green:#218242; --warning-amber:#8a4b00; --hairline:#E5E7EB;
+  --error:#ba1a1a; --on-error-container:#93000a;
+  --secondary-container:#96f4a7; --on-secondary-container:#04663a; --tertiary-container:#712a00;
+
+  --u:4px; --u2:8px; --u3:12px; --u4:16px; --u5:20px; --u6:24px; --u8:32px; --u12:48px;
+  --zone:72px; --measure:720px; --container-max:1280px; --margin:32px;
+
+  --fs-micro:13px;--fs-small:14px;--fs-body:16px;--fs-lead:18px;
+      --fs-title:21px;--fs-stat:24px;--fs-display:28px;
+      --control-pad:7px;
+      --r-sm:4px; --r-lg:6px; --r-pill:9999px;
+  --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --math:"Asana Math","JetBrains Mono",ui-monospace,serif;
+  --ord-0:#86b6ef; --ord-1:#5598e7; --ord-2:#2a78d6; --ord-3:#184f95; --ord-4:#0d366b;
+  --ease:cubic-bezier(.2,.7,.3,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--surface);color:var(--on-surface);font-family:var(--sans);
+  font-size:var(--fs-body);line-height:1.55;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--deep-teal);outline-offset:3px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important}
+  /* The curve cross-fades instead of interpolating its geometry. */
+  #curve{transition:opacity .18s linear}
+}
+
+/* ═══ MASTHEAD ═══ */
+.masthead{border-bottom:1px solid var(--hairline);background:var(--lowest);position:sticky;top:0;z-index:30}
+.masthead-inner{max-width:var(--container-max);margin:0 auto;padding:0 var(--margin);
+  display:flex;align-items:stretch;gap:var(--u8);height:58px}
+.mark{display:flex;flex-direction:column;justify-content:center;padding-right:var(--u6)}
+.mark b{font-size:var(--fs-body);font-weight:700;letter-spacing:-.015em;color:var(--primary);line-height:1.15}
+.mark span{font-size:var(--fs-micro);font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--outline)}
+nav#nav{display:flex;align-items:stretch;flex:1}
+nav#nav button{all:unset;display:flex;align-items:center;padding:0 var(--u5);font-size:var(--fs-body);
+  color:var(--on-variant);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;
+  transition:color .16s var(--ease),border-color .16s var(--ease)}
+nav#nav button:hover{color:var(--on-surface)}
+nav#nav button[aria-current="page"]{color:var(--primary);font-weight:600;border-bottom-color:var(--deep-teal)}
+.toplinks{display:flex;align-items:center}
+.toplinks a{font-size:var(--fs-body);color:var(--on-variant);text-decoration:none;padding:var(--u2) var(--u3);
+  border-radius:var(--r-sm);white-space:nowrap}
+.toplinks a:hover{color:var(--primary);background:var(--low)}
+
+main{padding:0 0 120px}
+.wrap{max-width:var(--container-max);margin:0 auto;padding:0 var(--margin)}
+.measure{max-width:var(--measure)}
+.head{padding:var(--zone) 0 var(--u8)}
+.head h2{font-size:var(--fs-display);font-weight:600;letter-spacing:-.015em;color:var(--primary);line-height:1.25}
+.head p{font-size:var(--fs-lead);line-height:1.6;color:var(--on-variant);margin-top:var(--u3);max-width:62ch}
+.hide{display:none !important}
+
+/* ═══ ESTIMATE GRID ═══ inputs left, figure right and pinned ═══ */
+.est-grid{display:grid;gap:var(--u8) var(--u12);grid-template-columns:minmax(0,1fr)}
+@media (min-width:1024px){
+  .est-grid{grid-template-columns:360px minmax(0,1fr)}
+  .est-figure{grid-column:2;grid-row:1;position:sticky;top:74px;align-self:start}
+  .est-controls{grid-column:1;grid-row:1}
+}
+/* Below the two-column breakpoint the figure pins to the top of the viewport at a reduced
+   height, so it stays in view while the inputs scroll beneath it. */
+@media (max-width:1023px){
+  .est-figure{position:sticky;top:58px;z-index:10;background:var(--surface);
+    padding-bottom:var(--u3);border-bottom:1px solid var(--hairline)}
+  .est-figure #curve{max-height:260px}
+  .readouts{grid-template-columns:repeat(auto-fit,minmax(96px,1fr)) !important}
+  .readout .v{font-size:var(--fs-lead) !important}
+}
+
+.figcard{background:var(--lowest);border-radius:var(--r-lg);padding:var(--u5)}
+.fighead{display:flex;align-items:center;justify-content:flex-end;gap:var(--u2);
+  margin-bottom:var(--u2);flex-wrap:wrap}
+.figtools{display:flex;align-items:center;gap:var(--u2)}
+.chartwrap{position:relative}
+svg#curve,svg#spread{display:block;width:100%;height:auto}
+.tip{position:absolute;transform:translate(-50%,-150%);background:var(--on-surface);color:#fff;
+  font-size:var(--fs-small);padding:5px var(--u2);border-radius:var(--r-sm);pointer-events:none;opacity:0;
+  transition:opacity .12s var(--ease);white-space:nowrap;z-index:5}
+
+#live-pill{font-size:var(--fs-micro);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px var(--u2);border-radius:var(--r-pill);background:var(--container);
+  color:var(--on-variant);transition:background .2s var(--ease),color .2s var(--ease)}
+#live-pill[data-state="busy"]{background:var(--high);color:var(--primary)}
+#live-pill[data-state="done"]{background:var(--secondary-container);color:var(--on-secondary-container)}
+
+.tbtn{all:unset;cursor:pointer;font-size:var(--fs-small);font-weight:600;color:var(--on-variant);
+  padding:4px var(--u2);border-radius:var(--r-sm);border:1px solid var(--outline-variant)}
+.tbtn:hover{background:var(--low);color:var(--primary)}
+.tbtn[aria-pressed="true"]{background:var(--high);color:var(--primary);border-color:var(--deep-teal)}
+
+/* ═══ READ-OUTS ═══ */
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:var(--u4);
+  margin-top:var(--u5)}
+.readout{min-width:0}
+.readout .k{overflow-wrap:anywhere;
+  font-size:var(--fs-micro);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--outline)}
+.readout .v{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:3px;
+  font-family:var(--math);font-size:var(--fs-stat);line-height:1.2;color:var(--on-surface);
+  margin-top:2px;border-radius:var(--r-sm);padding:0 2px;width:fit-content;max-width:100%}
+.readout .v.flash{animation:flash .4s var(--ease)}
+@keyframes flash{0%{background:var(--high);box-shadow:0 0 0 4px var(--high)}
+  100%{background:transparent;box-shadow:0 0 0 4px transparent}}
+
+/* ═══ CONTROLS ═══ */
+.pgroup{margin-bottom:var(--u8);border-radius:var(--r-sm)}
+.pgroup>h3{font-size:var(--fs-micro);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--outline);margin-bottom:var(--u4);padding-bottom:var(--u2);
+  border-bottom:1px solid var(--hairline)}
+.revealed{animation:reveal 1.8s var(--ease)}
+@keyframes reveal{0%,55%{background:var(--container);box-shadow:0 0 0 10px var(--container)}
+  100%{background:transparent;box-shadow:0 0 0 10px transparent}}
+
+.field{margin-bottom:var(--u5);position:relative}
+.field>label:not(.checkline){display:block;font-size:var(--fs-micro);font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--on-variant);margin-bottom:var(--u2)}
+.field .row{display:flex;align-items:center;gap:var(--u2)}
+.field input[type=text],.field select{font-family:var(--math);font-size:var(--fs-body);
+  color:var(--on-surface);background:var(--lowest);border:1px solid var(--outline-variant);
+  border-radius:var(--r-sm);padding:var(--control-pad) var(--u2);width:100px}
+.field select{font-family:var(--sans);font-size:var(--fs-body);width:auto;cursor:pointer}
+.field input:focus,.field select:focus{outline:none;border-color:var(--deep-teal);
+  box-shadow:inset 0 0 0 1px var(--deep-teal)}
+.field input.pending{border-color:var(--warning-amber);background:#fff8ef}
+.field input:disabled{background:var(--low);color:var(--outline);cursor:not-allowed}
+fieldset.field{border:0;padding:0;margin:0 0 var(--u5)}
+fieldset.field legend{font-size:var(--fs-micro);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--on-variant);margin-bottom:var(--u2);padding:0}
+fieldset.field:disabled{opacity:.5}
+.radioline{display:flex;align-items:center;gap:var(--u2);margin-bottom:var(--u2);font-size:var(--fs-body)}
+.radioline label{display:flex;align-items:center;gap:var(--u2);cursor:pointer}
+.radioline input[type=radio]{accent-color:var(--deep-teal)}
+.radioline #i-hs{width:70px}
+.subdiv{border-top:1px solid var(--hairline);padding-top:var(--u4)}
+.field .note{font-size:var(--fs-small);color:var(--outline);margin-top:var(--u2);line-height:1.45}
+
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;
+  background:transparent;cursor:pointer;margin-top:var(--u2)}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--highest);border-radius:2px}
+input[type=range]::-moz-range-track{height:4px;background:var(--highest);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+  border-radius:50%;background:var(--deep-teal);border:2px solid var(--lowest);margin-top:-7px;
+  transition:transform .12s var(--ease)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+  background:var(--deep-teal);border:2px solid var(--lowest)}
+input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.25)}
+
+.coach{background:var(--container) !important;color:var(--on-surface) !important;position:absolute;left:0;top:100%;margin-top:var(--u);z-index:12;background:var(--primary);
+  color:#fff;font-size:var(--fs-small);font-weight:500;padding:var(--u2) var(--u3);border-radius:var(--r-sm);
+  white-space:nowrap;animation:nudge 1.6s var(--ease) infinite}
+.coach::before{content:"";position:absolute;top:-5px;left:18px;border:5px solid transparent;
+  border-top:0;border-bottom-color:var(--primary)}
+@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+.checkline{display:flex;align-items:flex-start;gap:var(--u2);font-size:var(--fs-small);color:var(--on-variant);
+  cursor:pointer;margin:var(--u3) 0}
+.info{margin-top:var(--u2)}
+.info summary{font-size:var(--fs-small)}
+.infotable{max-width:420px;font-size:var(--fs-small);margin:var(--u3) 0}
+.infotable td,.infotable th{padding:var(--u2) var(--u3) var(--u2) 0;text-align:left;font-family:var(--sans)}
+.infotable td:last-child{font-family:var(--math);white-space:nowrap}
+.chips{display:flex;gap:var(--u2);flex-wrap:wrap;margin-top:var(--u2)}
+.chips button{all:unset;cursor:pointer;font-size:var(--fs-micro);font-weight:600;letter-spacing:.02em;
+  color:var(--on-variant);padding:3px var(--u2);border-radius:var(--r-pill);
+  border:1px solid var(--outline-variant)}
+.chips button:hover{color:var(--primary);background:var(--low)}
+.chips button[aria-pressed="true"]{background:var(--high);color:var(--primary);
+  border-color:var(--deep-teal)}
+.checkline input{accent-color:var(--deep-teal);margin-top:3px}
+
+.badge{display:inline-block;font-size:var(--fs-micro);font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;background:var(--tertiary-container);color:#fff;padding:2px 6px;
+  border-radius:var(--r-sm);margin-left:var(--u2);vertical-align:middle}
+
+.sentence{font-size:var(--fs-lead);line-height:1.6;color:var(--on-surface);margin-bottom:var(--u5)}
+.sentence b{font-family:var(--math);font-weight:400;color:var(--primary)}
+.sentence:empty{display:none}
+.caution{font-size:var(--fs-small);line-height:1.5;color:var(--on-error-container);
+  border-left:2px solid var(--warning-amber);padding:var(--u2) 0 var(--u2) var(--u3);
+  margin-top:var(--u3)}
+.explain{font-size:var(--fs-small);line-height:1.6;color:var(--on-variant);margin-top:var(--u3)}
+.explain p+p{margin-top:var(--u3)}
+.explain b{color:var(--on-surface)}
+
+details{margin-top:var(--u4)}
+summary{cursor:pointer;font-size:var(--fs-small);font-weight:600;color:var(--deep-teal);list-style:none;
+  display:flex;align-items:center;gap:var(--u2)}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"\25B8";transition:transform .16s var(--ease)}
+details[open]>summary::before{transform:rotate(90deg)}
+
+/* ═══ LEARN ═══ */
+.learn h3{font-size:var(--fs-title);font-weight:600;color:var(--primary);margin:var(--zone) 0 var(--u3)}
+.learn h3:first-of-type{margin-top:var(--u6)}
+.learn p{font-size:var(--fs-body);line-height:1.7;color:var(--on-variant);margin-bottom:var(--u3);max-width:68ch}
+.learn ul{margin:0 0 var(--u3) var(--u5);color:var(--on-variant);font-size:var(--fs-body);line-height:1.7}
+.learn li{margin-bottom:var(--u2)}
+.learn a{color:var(--deep-teal)}
+.learn b{color:var(--on-surface)}
+.poe{background:var(--low);border-radius:var(--r-lg);padding:var(--u5);margin:var(--u6) 0}
+.poe .q{font-size:var(--fs-body);font-weight:600;color:var(--on-surface);margin-bottom:var(--u3)}
+.poe .opts{display:flex;gap:var(--u2);flex-wrap:wrap}
+.poe button{all:unset;cursor:pointer;font-size:var(--fs-body);padding:var(--u2) var(--u4);
+  border-radius:var(--r-pill);border:1px solid var(--outline-variant);background:var(--lowest);
+  color:var(--on-surface)}
+.poe button:hover{border-color:var(--deep-teal);color:var(--primary)}
+.poe button[aria-pressed="true"]{background:var(--high);border-color:var(--deep-teal);
+  color:var(--primary);font-weight:600}
+.poe .reveal{margin-top:var(--u4);font-size:var(--fs-body);line-height:1.6;color:var(--on-variant)}
+.refs{margin-left:var(--u5);font-size:var(--fs-small);line-height:1.6}
+.refs li{margin-bottom:var(--u3);color:var(--on-variant)}
+
+/* ═══ LEARN FIGURES ═══ */
+.fig{display:block;width:100%;height:auto;background:var(--lowest);border-radius:var(--r-lg);
+  margin:var(--u4) 0 var(--u2)}
+.figcap{font-size:var(--fs-small);color:var(--outline);margin:0 0 var(--u3)}
+.takeaway{background:var(--low);border-left:2px solid var(--deep-teal);border-radius:0 var(--r-sm) var(--r-sm) 0;
+  padding:var(--u3) var(--u4);font-size:var(--fs-body);line-height:1.6;color:var(--on-surface);
+  margin:var(--u4) 0;max-width:68ch}
+.ktable{max-width:520px;margin:var(--u4) 0}
+.ktable td{vertical-align:top}
+.ktable td[rowspan]{font-family:var(--sans);font-size:var(--fs-small);color:var(--outline);text-align:left;
+  padding-left:var(--u5)}
+
+/* ═══ FIT WORKFLOW ═══ */
+#v-fit .measure,#v-fit .head.measure{margin-left:auto;margin-right:auto}
+#v-fit .head h2,#v-fit .head p{text-align:left}
+.stage{margin:0 0 var(--u8);padding:0 0 var(--u6);border-bottom:1px solid var(--hairline)}
+.stage:last-child{border-bottom:0;padding-bottom:0}
+.stage-head{display:flex;align-items:center;gap:var(--u3);margin-bottom:var(--u2)}
+.stage-head h3{font-size:var(--fs-body);font-weight:600;margin:0;letter-spacing:0}
+.stage-n{flex:none;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:var(--fs-micro);font-weight:700;background:var(--outline-variant);
+  color:var(--lowest)}
+.stage.current .stage-n{background:var(--deep-teal)}
+.stage.done .stage-n{background:var(--on-secondary-container)}
+.stage-state{margin-left:auto;font-size:var(--fs-small);color:var(--on-variant);font-family:var(--math)}
+.stage-say{font-size:var(--fs-small);color:var(--on-variant);margin:0 0 var(--u4)}
+.stage:not(.current) .stage-say{display:none}
+.starters-label{font-size:var(--fs-small);color:var(--on-variant);margin:0 0 var(--u3)}
+.parse-note{font-size:var(--fs-small);margin-top:var(--u2);min-height:1.4em}
+.parse-note.ok{color:var(--on-secondary-container)}
+.parse-note.bad{color:var(--on-error-container)}
+.cheat{margin-top:var(--u3);font-size:var(--fs-small);color:var(--on-variant)}
+.cheat>div{display:flex;gap:var(--u3);align-items:baseline;margin-bottom:var(--u)}
+.cheat code{font-family:var(--math);background:var(--low);padding:1px var(--u2);
+  border-radius:var(--r-sm);min-width:158px}
+.cheat span code{min-width:0;padding:0 3px}
+.mini{font-size:var(--fs-micro);text-transform:uppercase;letter-spacing:.05em;
+  font-weight:700;color:var(--outline)}
+.pop{position:absolute;z-index:40;min-width:176px;background:var(--lowest);
+  border:1px solid var(--outline-variant);border-radius:var(--r-lg);
+  box-shadow:0 6px 20px rgba(20,27,43,.14);padding:var(--u2)}
+.pop-title{font-size:var(--fs-small);font-family:var(--math);font-weight:600;
+  background:var(--high);color:var(--on-surface);
+  margin:calc(-1*var(--u2)) calc(-1*var(--u2)) var(--u2);
+  padding:var(--u2) var(--u3);border-bottom:1px solid var(--hairline);
+  border-radius:calc(var(--r-lg) - 2px) calc(var(--r-lg) - 2px) 0 0}
+.pop-h{font-size:var(--fs-micro);text-transform:uppercase;letter-spacing:.05em;
+  font-weight:700;color:var(--outline);padding:var(--u2) var(--u2) var(--u)}
+.pop-hint{font-size:var(--fs-small);color:var(--on-variant);padding:0 var(--u2) var(--u2);
+  max-width:220px}
+.pop button{all:unset;display:block;width:100%;box-sizing:border-box;cursor:pointer;
+  font-size:var(--fs-body);padding:var(--u2);border-radius:var(--r-sm)}
+.pop button:hover,.pop button:focus-visible{background:var(--low)}
+.pop-sep{border-top:1px solid var(--hairline);margin:var(--u2) 0}
+.pop button.danger{color:var(--error)}
+.stage{scroll-margin-top:74px}
+#f-rail{display:none}
+@media (min-width:1100px){
+  #v-fit .wrap{display:grid;grid-template-columns:188px minmax(0,1fr);column-gap:var(--u8)}
+  #v-fit .measure,#v-fit .head.measure{width:100%}
+  #v-fit .wrap>*{grid-column:2}
+  #v-fit #f-rail{display:block;grid-column:1;grid-row:1/span 99;position:sticky;
+    top:calc(var(--zone) + var(--u3));align-self:start}
+}
+.rail-item{all:unset;display:flex;gap:var(--u2);align-items:flex-start;width:100%;
+  box-sizing:border-box;cursor:pointer;padding:var(--u2);border-radius:var(--r-sm);
+  margin-bottom:var(--u)}
+.rail-item:hover,.rail-item:focus-visible{background:var(--low)}
+.rail-item.current{background:var(--high)}
+.rail-item .stage-n{background:var(--outline-variant)}
+.rail-item.current .stage-n{background:var(--deep-teal)}
+.rail-item.done .stage-n{background:var(--on-secondary-container)}
+.rail-item .stage-n{flex:none;margin-top:1px}
+.rail-name{font-size:var(--fs-small);font-weight:600;color:var(--on-surface);display:block}
+.rail-item.todo .rail-name{color:var(--on-variant);font-weight:500}
+.rail-note{font-size:var(--fs-micro);color:var(--on-variant);font-family:var(--math);
+  display:block;margin-top:1px}
+.btn-primary{all:unset;cursor:pointer;background:var(--primary);color:var(--on-primary);
+  padding:var(--u2) var(--u5);border-radius:var(--r-pill);font-size:var(--fs-body);
+  font-weight:600}
+.btn-primary:hover,.btn-primary:focus-visible{background:var(--primary-container)}
+.cond-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--u2) var(--u3);
+  margin-bottom:var(--u3)}
+.cond-row label{font-size:var(--fs-small);color:var(--on-variant);min-width:132px}
+.cond-row input[type=text]{width:92px;padding:var(--control-pad) var(--u2);font-size:var(--fs-body);
+  border:1px solid var(--outline-variant);border-radius:var(--r-sm);background:var(--lowest)}
+.cond-derived{font-size:var(--fs-small);color:var(--on-secondary-container);font-family:var(--math)}
+.readout .u{font-size:.62em;color:var(--on-variant);font-family:var(--sans);
+  white-space:nowrap}
+.cond-missing{font-size:var(--fs-small);color:var(--on-error-container)}
+.ratelaw{font-size:var(--fs-small);color:var(--on-surface);font-family:var(--math);
+  margin-top:var(--u2)}
+.ratelaw sub{font-size:.75em;vertical-align:sub;font-family:var(--sans)}
+.ratelaw-note{color:var(--on-variant);margin-left:var(--u4)}
+#f-starters{margin-top:var(--u5)}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--u3)}
+.gallery.compact{display:flex;flex-wrap:wrap;gap:var(--u2)}
+.gallery.compact button{padding:var(--u) var(--u3);border-radius:var(--r-pill);
+  flex-direction:row;align-items:center;gap:var(--u2)}
+.gallery.compact button b{font-size:var(--fs-micro);margin:0;display:inline}
+.gallery.compact .card-desc{display:none}
+.gallery.compact .card-art{height:auto;margin:0}
+.gallery.compact .card-art svg{zoom:.72}
+.gallery button{all:unset;cursor:pointer;padding:var(--u3) var(--u4);border-radius:var(--r-lg);
+  background:var(--lowest);border:1px solid var(--hairline);box-sizing:border-box;
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start}
+.gallery button:hover{border-color:var(--deep-teal);background:var(--low)}
+.gallery button.active{border-color:var(--primary);background:var(--secondary-container)}
+.gallery b{display:block;font-size:var(--fs-small);color:var(--primary);margin-bottom:2px}
+.gallery .card-desc{font-size:var(--fs-small);line-height:1.45;color:var(--on-variant)}
+.card-art{height:60px;display:flex;align-items:center;margin-bottom:var(--u2)}
+.card-art svg{display:block}
+.callout{display:flex;align-items:flex-start;gap:var(--u3);margin-top:var(--u4);
+  background:var(--secondary-container);color:var(--on-secondary-container);
+  border-radius:var(--r-lg);padding:var(--u3) var(--u4);font-size:var(--fs-body);line-height:1.5}
+.callout button{all:unset;cursor:pointer;font-size:var(--fs-body);line-height:1;padding:2px 6px}
+#f-callout-text{display:flex;gap:var(--u3);align-items:flex-start;flex:1}
+#f-callout-text .card-art svg{height:36px;width:auto}
+#f-callout-text code{font-family:var(--math);font-size:var(--fs-small)}
+.fstatus{display:flex;align-items:center;justify-content:space-between;gap:var(--u3);
+  margin-top:var(--u2);font-size:var(--fs-small);color:var(--on-variant);flex-wrap:wrap}
+.fstatus .ok{color:var(--on-secondary-container)}
+.fstatus .bad{color:var(--on-error-container);cursor:pointer;text-decoration:underline;
+  text-underline-offset:2px}
+.fstatus-controls{display:flex;align-items:center;gap:var(--u2)}
+.fstatus-controls select,.fstatus-controls input{font-size:var(--fs-body);
+  padding:var(--control-pad) var(--u2);
+  border:1px solid var(--outline-variant);border-radius:var(--r-sm);background:var(--lowest)}
+#f-label{width:156px}
+#f-data{height:200px;resize:vertical}
+.colnote{display:flex;flex-wrap:wrap;align-items:center;gap:var(--u2);margin-top:var(--u2)}
+.colhead{font-size:var(--fs-micro);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--outline)}
+.colchip{all:unset;cursor:pointer;font-size:var(--fs-small);padding:2px var(--u3);
+  border-radius:var(--r-pill);border:1px solid var(--outline-variant);background:var(--lowest);
+  color:var(--on-surface)}
+.colchip:hover,.colchip:focus-visible{border-color:var(--deep-teal)}
+.colchip.bal{background:var(--low);color:var(--on-variant);border-style:dashed}
+.colchip.time{cursor:default;background:var(--low);color:var(--on-variant)}
+.colbal{font-size:var(--fs-small);color:var(--on-variant)}
+.maplegend{display:flex;flex-wrap:wrap;gap:var(--u2) var(--u4);justify-content:center;
+  font-size:var(--fs-small);color:var(--on-variant);margin:var(--u2) 0}
+.maplegend b{color:var(--on-surface);font-family:var(--math)}
+button.starters-label{all:unset;cursor:pointer;display:block;font-size:var(--fs-small);
+  color:var(--on-variant);margin:0 0 var(--u3)}
+button.starters-label:hover{color:var(--on-surface)}
+#f-status-text{flex:1 1 auto;min-width:0}
+.fitrun{display:flex;align-items:center;gap:var(--u3);margin:var(--u4) 0}
+.exports{margin:var(--u2) 0 var(--u4)}
+.fitrun-note{font-size:var(--fs-small);color:var(--on-variant)}
+#f-data.dragover{border-color:var(--deep-teal);background:var(--low)}
+#f-canvas [data-node],#f-canvas [data-edge]{cursor:pointer}
+#f-canvas [data-node]:hover{stroke:var(--deep-teal);stroke-width:2}
+#f-canvas [data-edge]:hover{stroke:rgba(42,120,214,0.16)}
+#f-canvas{touch-action:manipulation;user-select:none;-webkit-user-select:none;overflow:visible}
+.hint{font-size:var(--fs-small);color:var(--outline);margin:var(--u) 0 var(--u3);display:flex;flex-wrap:wrap;
+  gap:var(--u) var(--u3);align-items:center;min-height:var(--u8)}
+.hint .chips{margin:0}
+
+
+/* ═══ TABLES ═══ */
+table{width:100%;border-collapse:collapse;font-family:var(--math);font-size:var(--fs-body)}
+thead th{font-family:var(--sans);font-size:var(--fs-micro);font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--outline);text-align:right;padding:0 var(--u3) var(--u3)}
+thead th:first-child{text-align:left;padding-left:0}
+tbody td{padding:var(--u3);text-align:right;border-bottom:1px solid var(--highest)}
+tbody td:first-child{text-align:left;padding-left:0}
+textarea{font-family:var(--math);font-size:var(--fs-body);width:100%;min-height:150px;padding:var(--u3);
+  border:1px solid var(--outline-variant);border-radius:var(--r-sm);background:var(--lowest);
+  color:var(--on-surface);line-height:1.7;resize:vertical}
+textarea:focus{outline:none;border-color:var(--deep-teal)}
+
+/* ═══ NARROW ═══ the masthead is what overflows first ═══ */
+@media (max-width:640px){
+  :root{--margin:16px;--zone:48px}
+  .masthead-inner{gap:var(--u3);height:54px}
+  .mark{padding-right:var(--u2)}
+  .mark b{font-size:var(--fs-body)}
+  .mark span{display:none}
+  nav#nav{overflow-x:auto;scrollbar-width:none}
+  nav#nav::-webkit-scrollbar{display:none}
+  nav#nav button{padding:0 var(--u3)}
+  .toplinks a{padding:var(--u2) var(--u)}
+  .est-figure{top:54px}
+  .figcard{padding:var(--u3)}
+  .head h2{font-size:var(--fs-stat)}
+  .head p{font-size:var(--fs-body)}
+}
+
+.lit{text-transform:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.err{font-size:var(--fs-small);font-weight:500;color:var(--on-error-container);margin-top:var(--u3)}
+.err:empty{display:none}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="mark"><b>RxnClock</b><span>Time to Completion</span></div>
+    <nav id="nav" aria-label="Sections">
+      <button data-v="estimate" aria-current="page">Estimate</button>
+      <button data-v="fit">Fit</button>
+      <button data-v="learn">Learn</button>
+    </nav>
+    <nav class="toplinks" id="toplinks" aria-label="External links"></nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ══════════════════ ESTIMATE ══════════════════ -->
+<section id="v-estimate">
+  <div class="wrap">
+    <div class="head measure">
+      <h2>How long to 50%, 90%, 99%?</h2>
+    </div>
+
+    <div class="est-grid">
+      <!-- The figure comes first in the DOM so a phone shows it first; on desktop the grid
+           places it in the right column and pins it. -->
+      <div class="est-figure" id="figure-panel">
+        <div class="figcard">
+          <div class="fighead">
+            <div class="figtools">
+              <span id="live-pill" data-state="live">Live</span>
+              <button class="tbtn" id="log-toggle" aria-pressed="false">Linear time</button>
+              <button class="tbtn" id="copy-values" data-label="Copy values">Copy values</button>
+            </div>
+          </div>
+          <div class="chartwrap">
+            <svg id="curve" role="img" aria-label="Conversion against time"></svg>
+            <div class="tip" id="curve-tip"></div>
+          </div>
+          <svg id="spread" role="img" aria-label="Time to 90 percent at each candidate order"></svg>
+        </div>
+
+        <div class="readouts">
+          <div class="readout"><div class="k">Half life</div><div class="v" id="t-half">n/a</div></div>
+          <div class="readout"><div class="k">To 90%</div><div class="v" id="t-90">n/a</div></div>
+          <div class="readout"><div class="k">To 99%</div><div class="v" id="t-99">n/a</div></div>
+          <div class="readout"><div class="k">Rate constant <span class="lit">k</span></div><div class="v" id="k-value">n/a</div></div>
+        </div>
+
+        <div class="sr" aria-live="polite" id="announce"></div>
+        <table class="sr">
+          <caption>Annotated conversion times</caption>
+          <thead><tr><th>Conversion</th><th>Time</th></tr></thead>
+          <tbody id="sr-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="est-controls">
+        <div class="pgroup" id="panel-core">
+          <h3>Measurement</h3>
+          <div class="field" id="coach-host">
+            <label for="i-x">Conversion (%)</label>
+            <div class="row"><input id="i-x" type="text" inputmode="decimal" autocomplete="off" value="40" step="any" min="0.1" max="99"></div>
+            <input id="s-x" type="range" min="1" max="99" step="0.5" value="40"
+                   aria-label="Conversion reached, percent">
+          </div>
+          <div class="field">
+            <label for="i-t">Time</label>
+            <div class="row">
+              <input id="i-t" type="text" inputmode="decimal" autocomplete="off" value="30" step="any" min="0.1" max="600">
+              <select id="i-timeu" aria-label="Time unit">
+                <option value="min" selected>min</option><option value="h">h</option>
+                <option value="s">s</option>
+              </select>
+            </div>
+            <input id="s-t" type="range" min="1" max="300" step="1" value="30" aria-label="Elapsed time">
+          </div>
+          <div class="field">
+            <label for="i-tm">Measured at</label>
+            <div class="row">
+              <input id="i-tm" type="text" inputmode="decimal" autocomplete="off" value="25" step="any">
+              <select id="i-tu" aria-label="Temperature unit">
+                <option value="C" selected>&#176;C</option><option value="K">K</option>
+                <option value="F">&#176;F</option>
+              </select>
+            </div>
+            <input id="s-tm" type="range" min="-20" max="120" step="1" value="25"
+                   aria-label="Measured temperature">
+          </div>
+          <div class="field">
+            <label for="i-n">Order n</label>
+            <div class="row"><input id="i-n" type="text" inputmode="decimal" autocomplete="off" value="1" step="0.1" min="0" max="3"></div>
+            <input id="s-n" type="range" min="0" max="3" step="0.1" value="1" aria-label="Reaction order">
+            <details class="info">
+              <summary>&#9432; Which n to try</summary>
+              <div class="explain">
+                <table class="infotable">
+                  <thead><tr><th>Situation</th><th>Try n</th></tr></thead>
+                  <tbody>
+                    <tr><td>One reactant limiting, the rest in excess</td><td>1 (pseudo first order)</td></tr>
+                    <tr><td>Unimolecular ionization or decomposition (S&#8202;N1)</td><td>1</td></tr>
+                    <tr><td>Two partners at similar concentration (S&#8202;N2)</td><td>2</td></tr>
+                    <tr><td>Catalyst, surface or enzyme saturated</td><td>0</td></tr>
+                    <tr><td>Radical chain or polymerization</td><td>fractional, often 3/2</td></tr>
+                  </tbody>
+                </table>
+                <p>Starting points from mechanism, not measurements. One point cannot confirm an
+                   order; two or more can, on <a href="#fit">Fit</a>.</p>
+                <p class="figcap">Sources:
+                  <a href="https://openstax.org/books/organic-chemistry/pages/11-2-the-sn2-reaction" target="_blank" rel="noopener">OpenStax 11.2</a>,
+                  <a href="https://openstax.org/books/organic-chemistry/pages/11-4-the-sn1-reaction" target="_blank" rel="noopener">11.4</a>,
+                  <a href="https://chem.libretexts.org/Bookshelves/General_Chemistry/Map%3A_General_Chemistry_(Petrucci_et_al.)/14%3A_Chemical_Kinetics/14.04%3A_Zero-Order_Reactions" target="_blank" rel="noopener">LibreTexts zero order</a>,
+                  <a href="https://oyc.yale.edu/chemistry/chem-125b/lecture-3" target="_blank" rel="noopener">Yale OYC radical chains</a></p>
+              </div>
+            </details>
+            <div class="note">Measured, never read off the balanced equation.</div>
+            <label class="checkline" id="panel-orders">
+              <input type="checkbox" id="orders-toggle">
+              <span>Any order fits one point. Show all five.</span>
+            </label>
+          </div>
+          <div class="field">
+            <label for="i-c0">C&#8320; (M)</label>
+            <div class="row"><input id="i-c0" type="text" inputmode="decimal" autocomplete="off" value="1.7" step="any" min="0.01" max="10"></div>
+            <input id="s-c0" type="range" min="0.1" max="5" step="0.05" value="1.7"
+                   aria-label="Initial concentration">
+            <div class="note" id="c0-note">Changes k and its units, not the curve.</div>
+          </div>
+          <div class="note"><a href="#fit">Have a full trace? Fit it.</a></div>
+        </div>
+
+        <div class="pgroup" id="panel-temperature">
+          <h3>What if: new temperature</h3>
+          <div class="field">
+            <label for="i-tp">New temperature</label>
+            <div class="row"><input id="i-tp" type="text" inputmode="decimal" autocomplete="off" value="25" step="any"></div>
+            <input id="s-tp" type="range" min="-20" max="150" step="1" value="25" list="reflux-ticks"
+                   aria-label="New temperature">
+            <datalist id="reflux-ticks">
+              <option value="40"></option><option value="66"></option>
+              <option value="82"></option><option value="111"></option>
+            </datalist>
+            <div class="chips" id="solvent-chips" role="group" aria-label="Common reflux temperatures">
+              <button type="button" data-t="40">DCM 40</button>
+              <button type="button" data-t="66">THF 66</button>
+              <button type="button" data-t="82">MeCN 82</button>
+              <button type="button" data-t="111">PhMe 111</button>
+            </div>
+          </div>
+          <fieldset class="field" id="t-mode">
+            <legend>Apply</legend>
+            <div class="radioline">
+              <label><input type="radio" name="tmode" id="mode-start" checked> from the start</label>
+            </div>
+            <div class="radioline">
+              <label><input type="radio" name="tmode" id="mode-at"> from time</label>
+              <input id="i-hs" type="text" inputmode="decimal" autocomplete="off">
+              <span class="note" style="margin:0" id="hs-unit">min</span>
+            </div>
+          </fieldset>
+          <div class="field subdiv">
+            <label for="i-ea">E&#8336; <span class="lit">(kJ/mol)</span> <span class="badge" id="ea-badge">Assumed</span></label>
+            <div class="row"><input id="i-ea" type="text" inputmode="decimal" autocomplete="off" value="50" step="any" min="0" max="400"></div>
+            <input id="s-ea" type="range" min="20" max="200" step="1" value="50"
+                   aria-label="Activation energy">
+            <div class="note">Heating clears the same barrier more often. It does not lower it.</div>
+          </div>
+
+          <div class="sentence" id="t-sentence"></div>
+          <div class="readout"><div class="k">Q10</div>
+            <div class="v" id="q10-value">n/a</div></div>
+          <div id="t-cautions"></div>
+
+          <details id="why-one-number">
+            <summary>Why one number describes the whole change</summary>
+            <div class="explain">
+              <p>Every time on this curve is proportional to 1/k, and temperature changes only k.
+                 One factor rescales the whole curve; the shape never changes.</p>
+              <p>See it: switch to <b>Log time</b> and drag Predict at. The curve slides sideways
+                 as one rigid piece.</p>
+            </div>
+          </details>
+        </div>
+
+        <div class="pgroup" id="panel-derivation">
+          <h3>Derivation</h3>
+          <details>
+            <summary>Show the integrated rate law</summary>
+            <div class="explain">
+              <p><b>Assumptions.</b> Constant volume, a single reactant, isothermal operation, no
+                 reverse reaction, and rate = k[A]<sup>n</sup>.</p>
+              <p><b>Symbols.</b> C&#8320; initial concentration (M); X conversion (dimensionless);
+                 t time; n order (dimensionless); k the rate constant, whose units are
+                 concentration<sup>1&#8722;n</sup> &#215; time<sup>&#8722;1</sup> and therefore change
+                 with the order.</p>
+              <p><b>1. Separate variables.</b> From &#8722;dC/dt = kC<sup>n</sup>, collect C on one
+                 side and t on the other.</p>
+              <p><b>2. Integrate from C&#8320; to C.</b> With C = C&#8320;(1&#8722;X) this gives
+                 t = C&#8320;<sup>1&#8722;n</sup>[(1&#8722;X)<sup>1&#8722;n</sup> &#8722; 1] /
+                 [(n&#8722;1)k], for every order except one.</p>
+              <p><b>3. The case n = 1, separately.</b> The general result divides by (1&#8722;n), which
+                 is undefined at n = 1, because the integral of 1/C is a logarithm rather than a power.
+                 There the answer is t = &#8722;ln(1&#8722;X)/k.</p>
+              <p><b>Continuity.</b> As n approaches 1 the general expression converges on the
+                 logarithmic one, so the two cases agree in the limit and the split is an artefact of
+                 how the integral is written, not a discontinuity in the chemistry.</p>
+              <p><b>What this means.</b> One measured point fixes k for a chosen order, and k then
+                 fixes the whole curve. Move the order slider and watch every read-out change
+                 together.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ FIT ══════════════════ -->
+<section id="v-fit" class="hide">
+  <div class="wrap">
+    <aside id="f-rail" aria-label="Progress"></aside>
+    <div class="head measure">
+      <h2>With more points, the data choose the constants</h2>
+    </div>
+    <div class="measure">
+
+      <!-- (1) DATA -->
+      <section class="stage current" id="f-stage-data">
+        <div class="stage-head">
+          <span class="stage-n" id="f-n-data">1</span>
+          <h3>Your data</h3>
+          <span class="stage-state" id="f-state-data"></span>
+        </div>
+        <p class="stage-say" id="f-say-data">Paste a time course: time in the first column,
+          one column per species.</p>
+
+        <div class="field" id="f-data-field">
+          <div class="chips" style="margin:0 0 8px">
+            <button type="button" id="f-sample">Load sample</button>
+            <button type="button" id="f-upload">Upload CSV</button>
+            <button type="button" id="f-clear">Clear</button>
+            <input type="file" id="f-file" accept=".csv,.txt,.tsv" class="hide">
+          </div>
+          <textarea id="f-data" spellcheck="false" placeholder="Paste your time course, two columns:
+time   signal
+(tab, comma, or spaces; lines starting with # are ignored)
+
+0      1.000
+10     0.812
+25     0.603"></textarea>
+          <div class="fstatus" id="f-status">
+            <span id="f-status-text">Nothing pasted yet.</span>
+            <span class="fstatus-controls">
+              <label class="mini" for="f-unit">time unit</label>
+              <select id="f-unit" aria-label="Time unit">
+                <option value="h" selected>h</option><option value="min">min</option>
+                <option value="s">s</option>
+              </select>
+              <label class="mini" for="f-label">y-axis label</label>
+              <input id="f-label" type="text" placeholder="e.g. HPLC area %"
+                     aria-label="Y-axis label">
+            </span>
+          </div>
+          <div class="colnote hide" id="f-columns"></div>
+          <details>
+            <summary>Data format help</summary>
+            <div class="explain">
+              <p>Two columns: time, conversion %. Several species: a header names them.
+                 A blank line separates runs; a repeated column name means replicates.
+                 Dot for decimals, comma between columns.</p>
+              <p>Columns map to species by name: a column called S is the measured trace
+                 of species S in your mechanism. The y-axis label box only titles the
+                 chart; it never affects the fit.</p>
+              <p style="font-family:var(--math);white-space:pre">t, conv%        t, A, B, C        t, A, A, A
+2, 10           0, 100, 0, 0      0, 100, 101, 99
+6, 26           5, 64, 30, 6      5, 64, 66, 63</p>
+            </div>
+          </details>
+        </div>
+
+        <div id="f-starters">
+          <button type="button" class="starters-label" id="f-starters-label">No data handy? Start from an example:</button>
+          <div class="gallery" id="f-gallery" role="group" aria-label="Example scenarios">
+            <button type="button" data-example="E1"><b>E1 &middot; Single conversion</b>
+              <span>One species becomes another. Fit one rate and read its half life.</span></button>
+            <button type="button" data-example="E2"><b>E2 &middot; Reversible pair</b>
+              <span>The signal plateaus with 20% left. Not slow: an equilibrium.</span></button>
+            <button type="button" data-example="E3"><b>E3 &middot; Sequential intermediate</b>
+              <span>The intermediate rises, then falls. No two-species model can draw this.</span></button>
+            <button type="button" data-example="E4"><b>E4 &middot; Four-species chain</b>
+              <span>Four species, six rate constants. The species count is yours to set.</span></button>
+            <button type="button" data-example="E5"><b>E5 &middot; Branched pathways</b>
+              <span>One reactant, two products. Try the sequential scheme and watch the residuals object.</span></button>
+            <button type="button" data-example="E6"><b>E6 &middot; Complex 2D network</b>
+              <span>A loop with a leak: A to B to C back to A, while C drains to D. A cycle no chain can mimic.</span></button>
+            <button type="button" id="f-seed"><b>Your Estimate point</b>
+              <span>Start a trace from the point on the Estimate tab.</span></button>
+          </div>
+        </div>
+
+        <div class="callout hide" id="f-callout" role="status">
+          <span id="f-callout-text"></span>
+          <button type="button" id="f-callout-close" aria-label="Dismiss">&#215;</button>
+        </div>
+
+        <div id="f-plot"></div>
+      </section>
+
+      <!-- (2) MECHANISM -->
+      <section class="stage hide" id="f-stage-scheme">
+        <div class="stage-head">
+          <span class="stage-n" id="f-n-scheme">2</span>
+          <h3>Your mechanism</h3>
+          <span class="stage-state" id="f-state-scheme"></span>
+        </div>
+        <p class="stage-say" id="f-say-scheme">Draw what turns into what. The fit follows.</p>
+
+        <div class="field" id="f-scheme-field">
+          <div class="chips" id="f-presets" role="group" aria-label="Scheme seeds">
+            <button type="button" data-scheme="A -> B">A&#8594;B</button>
+            <button type="button" data-scheme="A -> B\nB -> C">A&#8594;B&#8594;C</button>
+            <button type="button" data-scheme="A = B">A&#8652;B</button>
+            <button type="button" data-scheme="A -> B\nA -> C">A&#8594;B, A&#8594;C</button>
+            <button type="button" id="f-add-species">+ species</button>
+          </div>
+          <svg id="f-canvas" viewBox="0 0 320 236" aria-label="Reaction scheme canvas"
+               style="display:block;width:100%;max-width:430px;height:auto;margin:8px auto 0"></svg>
+          <div class="maplegend hide" id="f-map-legend"></div>
+          <div class="hint" id="f-guide">Hover a species and drag its + handle to connect.</div>
+          <div class="pop hide" id="f-pop" role="menu" aria-label="Edit selection"></div>
+          <details>
+            <summary>Type it instead</summary>
+            <textarea id="f-scheme" rows="3" spellcheck="false" style="min-height:70px"
+                      placeholder="S + Cat -> P + Cat"></textarea>
+            <div class="parse-note" id="f-scheme-status"></div>
+            <div class="cheat" aria-label="Scheme syntax">
+              <div><code>A -&gt; B</code><span>irreversible step</span></div>
+              <div><code>A &lt;-&gt; B</code><span>reversible; <code>&lt;=&gt;</code> and <code>=</code> work too</span></div>
+              <div><code>S + Cat -&gt; P + Cat</code><span>catalytic: Cat is unchanged across the arrow</span></div>
+              <div><code># slow batch</code><span>comment line, ignored</span></div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- (3) CONDITIONS -->
+      <section class="stage hide" id="f-stage-cond">
+        <div class="stage-head">
+          <span class="stage-n">3</span>
+          <h3>Conditions</h3>
+          <span class="stage-state" id="f-state-cond"></span>
+        </div>
+        <p class="stage-say">A fit measures how fast the trace decays. Concentrations turn
+          that into a rate constant with units.</p>
+        <div id="f-cond-fields"></div>
+      </section>
+
+      <!-- (4) FIT -->
+      <section class="stage hide" id="f-stage-fit">
+        <div class="stage-head">
+          <span class="stage-n" id="f-n-fit">3</span>
+          <h3>The fit</h3>
+          <span class="stage-state" id="f-state-fit"></span>
+        </div>
+        <div class="err" id="f-err"></div>
+        <div id="f-body"></div>
+      </section>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ LEARN ══════════════════ -->
+<section id="v-learn" class="hide">
+  <div class="wrap learn measure">
+    <div class="head">
+      <h2>Learn</h2>
+      <p>What a rate law is, where order comes from, and how to fit one honestly.</p>
+    </div>
+
+    <h3>What a rate law is, and where order comes from</h3>
+    <p>A rate law relates how fast a reaction runs to how much reactant is present:
+       rate = k[A]<sup>n</sup>. The exponent n is the <b>reaction order</b>.</p>
+    <div class="takeaway">Order comes from experiment, not the balanced equation.
+       2A &#8594; B is not automatically second order [<a href="#ref3">3</a>].</div>
+
+    <h3>From the differential form to the integrated form</h3>
+    <p>The differential form says how fast things are changing right now. The integrated form says
+       where you will be at a given time. Getting from one to the other is the step textbooks most
+       often leave implicit [<a href="#ref5">5</a>], so the Estimate page shows it in full under
+       Derivation.</p>
+    <table class="ktable">
+      <thead><tr><th>Order n</th><th>Units of k</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>M&#183;min&#8315;&#185;</td>
+            <td rowspan="3">k carries concentration<sup>1&#8722;n</sup> per time,
+                so its units change with n</td></tr>
+        <tr><td>1</td><td>min&#8315;&#185;</td></tr>
+        <tr><td>2</td><td>M&#8315;&#185;&#183;min&#8315;&#185;</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Order by order</h3>
+    <svg class="fig" data-fig="orders" role="img"
+         aria-label="Five conversion curves with the same half life, one per order"></svg>
+    <p class="figcap">Same half life, five orders. Low orders finish; high orders flatten.</p>
+    <svg class="fig" data-fig="halflife" role="img"
+         aria-label="A first order curve crossing 50, 75 and 87.5 percent at equal time steps"></svg>
+    <div class="takeaway">Equal steps every time is the first order fingerprint. It is not true of
+       decay in general [<a href="#ref4">4</a>].</div>
+
+    <div class="poe" data-poe="halflife">
+      <div class="q">Before you check: at zero order, is the second half life longer than, the same
+        as, or shorter than the first?</div>
+      <div class="opts">
+        <button data-a="longer">Longer</button>
+        <button data-a="same">The same</button>
+        <button data-a="shorter">Shorter</button>
+      </div>
+      <div class="reveal hide"><b>Shorter, by half.</b> At zero order the rate is constant, so equal
+        times remove equal amounts of material. The first half life consumes half of C&#8320;; the
+        second has only half as much left to get through, so it takes half as long. Set the order
+        slider to 0 on Estimate and read the annotations.</div>
+    </div>
+
+    <h3>Why one point is not enough</h3>
+    <p>A single measurement fixes one point on the curve. It does not fix the order.</p>
+    <svg class="fig" data-fig="fan" role="img"
+         aria-label="Five order curves all passing through one measured point, reaching 99 percent between 74 and 4455 minutes"></svg>
+    <p><a href="#estimate?orders=1">See it live: one point, five orders</a></p>
+
+    <h3>Temperature</h3>
+    <p>The Arrhenius equation gives k(T&#8322;)/k(T&#8321;) =
+       exp[&#8722;Ea/R &#183; (1/T&#8322; &#8722; 1/T&#8321;)].</p>
+    <div class="takeaway">Heating does not lower the barrier. It raises the fraction of collisions
+       that clear the same barrier [<a href="#ref3">3</a>].</div>
+    <p>"The rate roughly doubles every ten degrees" is a rule of thumb, not a law. It holds near
+       Ea &#8776; 53 kJ/mol at room temperature; at 100 kJ/mol the same ten-kelvin step is a factor of
+       3.7. The Q10 read-out on Estimate is computed from your current activation energy rather than
+       asserted.</p>
+    <p>One honest caveat: a straight line on an Arrhenius plot is not on its own evidence that the
+       activation energy is temperature independent [<a href="#ref18">18</a>]. Over a narrow range
+       many non-Arrhenius models also look straight.</p>
+
+    <div class="poe" data-poe="logshift">
+      <div class="q">Before you check: on a logarithmic time axis, raising the temperature shifts the
+        90% point left. What happens to the 50% point?</div>
+      <div class="opts">
+        <button data-a="less">Shifts left, but less</button>
+        <button data-a="same">Shifts left by the same amount</button>
+        <button data-a="more">Shifts left, but more</button>
+      </div>
+      <div class="reveal hide"><b>By exactly the same amount.</b> The shift is
+        log10(k&#8322;/k&#8321;) decades at every conversion level and for every order, so the curve
+        translates rigidly. Switch the axis to Log time on Estimate and drag the predicted temperature
+        to watch it slide.</div>
+    </div>
+
+    <svg class="fig" data-fig="shift" role="img"
+         aria-label="The same first order curve at 25 and 35 degrees on a log time axis, shifted sideways by a constant amount"></svg>
+
+    <h3>Fitting data honestly</h3>
+    <p>Fit the untransformed data. Linearizing a rate law and running least squares on the transformed
+       variables distorts the error structure and systematically flatters whichever model the
+       transform suits. In a reanalysis of 225 published kinetic datasets, the linearized form
+       preferred the pseudo-second-order model in every single case, while nonlinear fitting of the
+       same data preferred pseudo-first-order in 54% of them [<a href="#ref12">12</a>]. The same
+       conclusion holds across simulated error structures
+       [<a href="#ref13">13</a>][<a href="#ref14">14</a>] and in enzyme kinetics
+       [<a href="#ref15">15</a>].</p>
+    <p>Judge a fit by the structure in its residuals, not by R&#178;. A high R&#178; is compatible
+       with an obviously wrong order; a residual plot that curves is not.</p>
+
+    <h3>Worked example with published numbers</h3>
+    <p>Bleaching of the food dye Allura Red by hypochlorite, followed with a smartphone camera, is
+       first order in the dye and gives an activation energy of 44.55 kJ/mol from a two-point
+       Arrhenius treatment [<a href="#ref10">10</a>]. It is real, sourced, and reproducible at home,
+       which makes it a better default than an invented number.</p>
+
+    <h3>References</h3>
+    <ol class="refs">
+      <li id="ref1"><b>Bain &amp; Towns (2016)</b>, <i>Chemistry Education Research and Practice</i>.
+        <a href="https://consensus.app/papers/details/29cbd0e50b8758b4bcf805dc179e44b3/" target="_blank" rel="noopener">A review of research on the teaching and learning of chemical kinetics</a>.
+        The anchor review behind this page.</li>
+      <li id="ref2"><b>Stroumpouli &amp; Tsaparlis (2022)</b>, <i>Chemistry Teacher International</i>.
+        <a href="https://consensus.app/papers/details/5bc60a70ec2b564390f2acde819bed9d/" target="_blank" rel="noopener">Chemistry students' conceptual difficulties and problem solving behavior in chemical kinetics</a>.
+        Lowest-scoring topics were extracting a rate law from a data table, and the Arrhenius
+        equation.</li>
+      <li id="ref3"><b>Sholeh et al. (2025)</b>, <i>Orbital: Jurnal Pendidikan Kimia</i>.
+        <a href="https://consensus.app/papers/details/b4fd4e479f16527a93154055abec16c0/" target="_blank" rel="noopener">Analyzing pre-service chemistry teachers' understanding and misconceptions of reaction rates</a>.
+        Source for both the stoichiometry and the activation-energy misconceptions.</li>
+      <li id="ref4"><b>Bain et al. (2018)</b>, <i>Journal of Chemical Education</i>.
+        <a href="https://consensus.app/papers/details/b79cacbf3bba5be5bed3227bec3ba793/" target="_blank" rel="noopener">Zero-order chemical kinetics as a context to investigate student understanding of catalysts and half-life</a>.
+        Students overgeneralize constant half life from first-order decay.</li>
+      <li id="ref5"><b>Seethaler et al. (2018)</b>, <i>Journal of Chemical Education</i>.
+        <a href="https://consensus.app/papers/details/3e90f9fc6b8f5d1cb66591ac9fcccc86/" target="_blank" rel="noopener">Analyzing general chemistry texts' treatment of rates of change concepts in reaction kinetics</a>.
+        Names the differential-to-integrated connection as a weak link.</li>
+      <li id="ref7"><b>Jere &amp; Ramaila (2024)</b>, <i>Research in Science Education</i>.
+        <a href="https://consensus.app/papers/details/13a7aea3941552459cadfec2f13daf7d/" target="_blank" rel="noopener">Enhancing learners' conceptual understanding of reaction kinetics using computer simulations</a>.
+        Source of the predict, observe, explain pattern used above.</li>
+      <li id="ref10"><b>Madriz et al. (2021)</b>, <i>Journal of Chemical Education</i>.
+        <a href="https://consensus.app/papers/details/9aa4994f201950648831620ffa209391/" target="_blank" rel="noopener">Exploring chemical kinetics at home: following the bleaching of Allura Red using a smartphone</a>.
+        First order in dye, Ea = 44.55 kJ/mol.</li>
+      <li id="ref12"><b>Lima et al. (2020)</b>, <i>Journal of Environmental Chemical Engineering</i>.
+        <a href="https://consensus.app/papers/details/77ba3693cda75e9c801ce11dbd41d192/" target="_blank" rel="noopener">Is one performing the treatment data of adsorption kinetics correctly?</a>
+        225 datasets; linearized R&#178; picked pseudo-second-order every time.</li>
+      <li id="ref13"><b>El-Khaiary &amp; Malash (2010)</b>, <i>Desalination</i>.
+        <a href="https://consensus.app/papers/details/cdf9b4506ca95649a1d0e030383c3610/" target="_blank" rel="noopener">On the use of linearized pseudo-second-order kinetic equations</a>.
+        Nonlinear regression most robust under every simulated error distribution.</li>
+      <li id="ref14"><b>Kumar (2006)</b>, <i>Journal of Hazardous Materials</i>.
+        <a href="https://consensus.app/papers/details/923cf71e5b40512ca4110bdc287f0980/" target="_blank" rel="noopener">Linear and non-linear regression analysis for the sorption kinetics of methylene blue</a>.
+        The linear method checks a hypothesis rather than verifying the model.</li>
+      <li id="ref15"><b>Buzrul (2026)</b>, <i>Chemistry &amp; Biodiversity</i>.
+        <a href="https://consensus.app/papers/details/bacafe6f1d6857a7a0c8668bc030764f/" target="_blank" rel="noopener">The Michaelis-Menten equation and its linear transformations revisited</a>.
+        Basis for keeping a linearized plot as visualization only.</li>
+      <li id="ref17"><b>Schwaab &amp; Pinto (2007)</b>, <i>Chemical Engineering Science</i>.
+        <a href="https://consensus.app/papers/details/d8e21410122351e5a5bc000ee5f761db/" target="_blank" rel="noopener">Optimum reference temperature for reparameterization of the Arrhenius equation</a>.
+        Why an activation energy is fitted against a reference temperature rather than against the
+        pre-exponential factor.</li>
+      <li id="ref18"><b>Peleg et al. (2012)</b>, <i>Critical Reviews in Food Science and Nutrition</i>.
+        <a href="https://consensus.app/papers/details/bc55d5e6600d5bfbb43cd8515774a343/" target="_blank" rel="noopener">The Arrhenius equation revisited</a>.
+        A linear Arrhenius plot is not on its own evidence of a temperature-independent activation
+        energy.</li>
+    </ol>
+  </div>
+</section>
+
+</main>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

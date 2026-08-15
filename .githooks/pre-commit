@@ -1,0 +1,8 @@
+#!/bin/sh
+# Punctuation guard. See the rule in CLAUDE.md.
+# Enable once per clone with: git config core.hooksPath .githooks
+node scripts/no-em-dash.mjs || {
+  echo ""
+  echo "pre-commit: blocked by the punctuation rule."
+  exit 1
+}

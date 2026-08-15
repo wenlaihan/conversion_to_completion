@@ -1,0 +1,342 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Reference - Kinetics Estimator</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#91a8ff",
+                        "primary-fixed": "#dce1ff",
+                        "surface-dim": "#d3daef",
+                        "on-tertiary-fixed": "#351000",
+                        "surface-tint": "#3f59ae",
+                        "on-secondary-fixed": "#00210a",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "surface-offwhite": "#F9F9F7",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#002271",
+                        "surface-container": "#e9edff",
+                        "on-surface-variant": "#444652",
+                        "on-background": "#141b2b",
+                        "warning-amber": "#D97706",
+                        "tertiary-container": "#712a00",
+                        "inverse-surface": "#293040",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#c5c5d3",
+                        "on-surface": "#141b2b",
+                        "hairline-border": "#E5E7EB",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed": "#001550",
+                        "tertiary-fixed": "#ffdbcc",
+                        "surface-container-high": "#e1e8fd",
+                        "on-primary-fixed-variant": "#254095",
+                        "surface-variant": "#dce2f7",
+                        "on-tertiary-container": "#f89261",
+                        "surface-container-highest": "#dce2f7",
+                        "surface-bright": "#f9f9ff",
+                        "deep-teal": "#1C398E",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#7dda90",
+                        "outline": "#757683",
+                        "tertiary-fixed-dim": "#ffb695",
+                        "primary-container": "#1c398e",
+                        "secondary": "#006d31",
+                        "on-secondary-fixed-variant": "#005323",
+                        "on-tertiary-fixed-variant": "#793005",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface": "#f9f9ff",
+                        "inverse-on-surface": "#edf0ff",
+                        "surface-container-low": "#f1f3ff",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#047234",
+                        "secondary-fixed": "#99f7aa",
+                        "background": "#f9f9ff",
+                        "science-green": "#218242",
+                        "secondary-container": "#96f4a7",
+                        "tertiary": "#4d1a00",
+                        "inverse-primary": "#b6c4ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "margin": "32px",
+                        "container-max": "1200px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "data-mono": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-md": ["15px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface-offwhite text-on-surface font-body-md antialiased min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-64 border-r border-hairline-border bg-surface-offwhite flex flex-col z-50">
+<div class="p-gutter border-b border-hairline-border">
+<h1 class="text-headline-md font-headline-md font-bold text-primary">Kinetics Estimator</h1>
+<p class="text-label-caps font-label-caps text-on-surface-variant mt-2">Technical Suite</p>
+</div>
+<div class="flex-1 overflow-y-auto py-unit">
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">science</span>
+                Estimator
+            </a>
+<a class="flex items-center px-gutter py-3 text-primary font-bold border-r-4 border-primary bg-surface-container transition-all duration-150" href="#">
+<span class="material-symbols-outlined mr-3">menu_book</span>
+                Documentation
+            </a>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">folder_open</span>
+                Project Files
+            </a>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">settings</span>
+                Settings
+            </a>
+</div>
+<div class="p-gutter border-t border-hairline-border">
+<button class="w-full bg-deep-teal text-on-primary py-2 px-4 rounded font-label-caps text-label-caps hover:opacity-90 transition-opacity">
+                New Calculation
+            </button>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-64 flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full z-40 border-b border-hairline-border bg-surface-container-lowest flex justify-between items-center h-16 px-gutter">
+<div class="flex items-center space-x-8">
+<span class="text-headline-md font-headline-md font-semibold text-primary">Documentation</span>
+<nav class="hidden md:flex space-x-6">
+<a class="text-on-surface-variant hover:text-primary transition-opacity duration-200 font-label-caps text-label-caps" href="#">Theory</a>
+<a class="text-primary border-b-2 border-primary pb-1 font-label-caps text-label-caps" href="#">API Reference</a>
+<a class="text-on-surface-variant hover:text-primary transition-opacity duration-200 font-label-caps text-label-caps" href="#">Methods</a>
+</nav>
+</div>
+<div class="flex items-center space-x-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+<input class="pl-8 pr-3 py-1 border border-hairline-border rounded bg-surface text-body-md font-body-md focus:border-deep-teal focus:ring-1 focus:ring-deep-teal outline-none transition-all w-64" placeholder="Search Reference..." type="text">
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-opacity duration-200"><span class="material-symbols-outlined">help_outline</span></button>
+<button class="text-on-surface-variant hover:text-primary transition-opacity duration-200"><span class="material-symbols-outlined">account_circle</span></button>
+</div>
+</header>
+<!-- Main Reading Area -->
+<main class="flex-1 bg-surface-offwhite max-w-container-max mx-auto w-full p-margin grid grid-cols-12 gap-gutter items-start">
+<!-- Left Column: TOC (Sticky) -->
+<aside class="col-span-3 sticky top-24">
+<div class="bg-surface-container-lowest border border-hairline-border rounded p-4">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4 pb-2 border-b border-hairline-border">Contents</h3>
+<ul class="space-y-3 font-body-md text-sm">
+<li class=""><a class="text-primary font-medium flex items-center before:content-[''] before:w-1 before:h-4 before:bg-primary before:mr-2 before:rounded-full" href="#core-equation">The core equation</a></li>
+<li class=""><a class="text-on-surface-variant hover:text-primary transition-colors" href="#reaction-order">Reaction order</a></li>
+<li class=""><a class="text-on-surface-variant hover:text-primary transition-colors" href="#kinetic-models">Kinetic models</a></li>
+<li class=""><a class="text-on-surface-variant hover:text-primary transition-colors" href="#temperature">Temperature and Arrhenius</a></li>
+<li class=""><a class="text-on-surface-variant hover:text-primary transition-colors" href="#undefined">When completion is undefined</a></li>
+<li class=""><a class="text-on-surface-variant hover:text-primary transition-colors" href="#uncertainty">Uncertainty</a></li>
+<li class=""><a class="text-on-surface-variant hover:text-primary transition-colors" href="#literature">Literature</a></li>
+</ul>
+</div>
+</aside>
+<!-- Central Column: Documentation -->
+<article class="col-span-7 space-y-12 pb-24">
+<section id="core-equation">
+<h1 class="text-headline-lg font-headline-lg text-on-surface mb-6">The core equation</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed mb-6">
+                        Chemical kinetics is the study of rates of chemical processes. It encompasses investigations of how different experimental conditions can influence the speed of a chemical reaction and yield information about the reaction's mechanism and transition states, as well as the construction of mathematical models that can describe the characteristics of a chemical reaction.
+                    </p>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8">
+                        The fundamental construct for quantifying the progress of a simple reaction over time relies on defining a rate law. This law correlates the reaction rate with concentrations or pressures of reactants and constant parameters.
+                    </p>
+<div class="bg-surface rounded border border-hairline-border p-6 my-8 flex flex-col items-center justify-center">
+<span class="font-data-mono text-data-mono text-lg tracking-wide text-primary">r = k [A]^m [B]^n</span>
+<span class="text-xs text-outline mt-3">Equation 1: General rate law</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        Where <span class="font-data-mono text-xs bg-surface-container px-1 rounded">r</span> is the reaction rate, <span class="font-data-mono text-xs bg-surface-container px-1 rounded">k</span> is the rate constant, and <span class="font-data-mono text-xs bg-surface-container px-1 rounded">[A]</span> and <span class="font-data-mono text-xs bg-surface-container px-1 rounded">[B]</span> are reactant concentrations. The exponents <span class="font-data-mono text-xs bg-surface-container px-1 rounded">m</span> and <span class="font-data-mono text-xs bg-surface-container px-1 rounded">n</span> represent the partial reaction orders.
+                    </p>
+</section>
+<hr class="border-t border-hairline-border">
+<section id="reaction-order">
+<h2 class="text-headline-md font-headline-md text-on-surface mb-4">Reaction order</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">
+                        The overall reaction order is the sum of the partial orders. For many common reactions in homogeneous systems, determining these orders empirically is the first step in establishing a robust kinetic model.
+                    </p>
+<div class="grid grid-cols-2 gap-4 my-6">
+<div class="bg-surface-container-lowest border border-hairline-border p-4 rounded">
+<h4 class="font-label-caps text-label-caps text-primary mb-2">First Order</h4>
+<p class="text-sm text-on-surface-variant">Rate depends linearly on only one reactant concentration.</p>
+</div>
+<div class="bg-surface-container-lowest border border-hairline-border p-4 rounded">
+<h4 class="font-label-caps text-label-caps text-primary mb-2">Second Order</h4>
+<p class="text-sm text-on-surface-variant">Rate depends on the square of one reactant, or two separate reactants.</p>
+</div>
+</div>
+</section>
+<section id="kinetic-models" class="space-y-6">
+  <h2 class="text-headline-md font-headline-md text-on-surface mb-4">Kinetic models</h2>
+  <div class="overflow-x-auto border border-hairline-border rounded">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="bg-surface-container-low border-b border-hairline-border">
+          <th class="p-3 font-label-caps text-label-caps text-on-surface-variant">Model Name</th>
+          <th class="p-3 font-label-caps text-label-caps text-on-surface-variant">g(X) Expression</th>
+          <th class="p-3 font-label-caps text-label-caps text-on-surface-variant">Max Conversion</th>
+          <th class="p-3 font-label-caps text-label-caps text-on-surface-variant">Typical Use</th>
+        </tr>
+      </thead>
+      <tbody class="text-sm font-body-md">
+        <tr class="border-b border-hairline-border hover:bg-surface-container-lowest">
+          <td class="p-3">Power Law (P2)</td>
+          <td class="p-3"><span class="font-data-mono text-xs bg-surface-container px-1 rounded">X^(1/2)</span></td>
+          <td class="p-3">1.0</td>
+          <td class="p-3">Nucleation growth</td>
+        </tr>
+        <tr class="border-b border-hairline-border hover:bg-surface-container-lowest">
+          <td class="p-3">Power Law (P3)</td>
+          <td class="p-3"><span class="font-data-mono text-xs bg-surface-container px-1 rounded">X^(1/3)</span></td>
+          <td class="p-3">1.0</td>
+          <td class="p-3">Nucleation growth</td>
+        </tr>
+        <tr class="border-b border-hairline-border hover:bg-surface-container-lowest">
+          <td class="p-3">Avrami-Erofeev (A2)</td>
+          <td class="p-3"><span class="font-data-mono text-xs bg-surface-container px-1 rounded">[-ln(1-X)]^(1/2)</span></td>
+          <td class="p-3">0.95</td>
+          <td class="p-3">Phase transitions</td>
+        </tr>
+        <tr class="border-b border-hairline-border hover:bg-surface-container-lowest">
+          <td class="p-3">Avrami-Erofeev (A3)</td>
+          <td class="p-3"><span class="font-data-mono text-xs bg-surface-container px-1 rounded">[-ln(1-X)]^(1/3)</span></td>
+          <td class="p-3">0.95</td>
+          <td class="p-3">Crystallization</td>
+        </tr>
+        <tr class="border-b border-hairline-border hover:bg-surface-container-lowest">
+          <td class="p-3">Contracting Area (R2)</td>
+          <td class="p-3"><span class="font-data-mono text-xs bg-surface-container px-1 rounded">1-(1-X)^(1/2)</span></td>
+          <td class="p-3">1.0</td>
+          <td class="p-3">Cylindrical particles</td>
+        </tr>
+        <tr class="border-b border-hairline-border hover:bg-surface-container-lowest">
+          <td class="p-3">Contracting Volume (R3)</td>
+          <td class="p-3"><span class="font-data-mono text-xs bg-surface-container px-1 rounded">1-(1-X)^(1/3)</span></td>
+          <td class="p-3">1.0</td>
+          <td class="p-3">Spherical particles</td>
+        </tr>
+        <tr class="border-b border-hairline-border hover:bg-surface-container-lowest">
+          <td class="p-3">1D Diffusion (D1)</td>
+          <td class="p-3"><span class="font-data-mono text-xs bg-surface-container px-1 rounded">X^2</span></td>
+          <td class="p-3">0.8</td>
+          <td class="p-3">Planar diffusion</td>
+        </tr>
+        <tr class="border-b border-hairline-border hover:bg-surface-container-lowest">
+          <td class="p-3">Jander Diffusion (D3)</td>
+          <td class="p-3"><span class="font-data-mono text-xs bg-surface-container px-1 rounded">[1-(1-X)^(1/3)]^2</span></td>
+          <td class="p-3">0.6</td>
+          <td class="p-3">Solid-state reactions</td>
+        </tr>
+        <tr class="hover:bg-surface-container-lowest">
+          <td class="p-3">Ginstling-Brounshtein (D4)</td>
+          <td class="p-3"><span class="font-data-mono text-xs bg-surface-container px-1 rounded">1-2X/3-(1-X)^(2/3)</span></td>
+          <td class="p-3">0.7</td>
+          <td class="p-3">Diffusion-controlled</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section><section id="temperature">
+<h2 class="text-headline-md font-headline-md text-on-surface mb-4">Temperature and Arrhenius</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">
+                        The temperature dependence of reaction rates is typically modeled using the Arrhenius equation, which introduces the concept of activation energy.
+                     </p>
+<div class="bg-surface rounded border border-hairline-border p-6 my-8 flex flex-col items-center justify-center">
+<span class="font-data-mono text-data-mono text-lg tracking-wide text-primary">k = A * e^(-E_a / RT)</span>
+<span class="text-xs text-outline mt-3">Equation 2: Arrhenius Equation</span>
+</div>
+</section>
+</article>
+<!-- Right Column: Supportive Notes -->
+<aside class="col-span-2 space-y-6">
+<div class="bg-surface-container-low p-4 rounded border border-hairline-border">
+<span class="flex items-center text-primary font-label-caps text-label-caps mb-2">
+<span class="material-symbols-outlined text-sm mr-1">info</span>
+                        Note
+                    </span>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                        All rate constants in this documentation assume ideal solution behavior unless explicitly stated otherwise in the supplementary methodology notes.
+                    </p>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded border border-hairline-border">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">Quick References</span>
+<ul class="text-xs text-primary space-y-2">
+<li class=""><a class="hover:underline" href="#">Standard States Table</a></li>
+<li class=""><a class="hover:underline" href="#">Gas Constant Variations</a></li>
+</ul>
+</div>
+<div class="space-y-4 mt-6">
+  <span class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">Key Citations</span>
+  <div class="bg-surface-container-lowest p-4 rounded border border-hairline-border space-y-2">
+    <h5 class="text-sm font-bold text-deep-teal leading-tight">Solid-state kinetics: A review</h5>
+    <p class="text-xs text-outline">Khawam &amp; Flanagan (2006)</p>
+    <p class="text-xs text-on-surface-variant italic">Comprehensive overview of model-fitting methods.</p>
+    <div class="pt-2 border-t border-hairline-border flex justify-between text-[10px] text-outline font-label-caps">
+      <span class="">J. Pharm. Sci.</span>
+      <span class="">1,240 citations</span>
+    </div>
+  </div>
+  <div class="bg-surface-container-lowest p-4 rounded border border-hairline-border space-y-2">
+    <h5 class="text-sm font-bold text-deep-teal leading-tight">The ICTAC Kinetics Project</h5>
+    <p class="text-xs text-outline">Vyazovkin et al. (2011)</p>
+    <p class="text-xs text-on-surface-variant italic">Standardized recommendations for thermal analysis.</p>
+    <div class="pt-2 border-t border-hairline-border flex justify-between text-[10px] text-outline font-label-caps">
+      <span class="">Thermochim. Acta</span>
+      <span class="">3,150 citations</span>
+    </div>
+  </div>
+  <div class="bg-surface-container-lowest p-4 rounded border border-hairline-border space-y-2">
+    <h5 class="text-sm font-bold text-deep-teal leading-tight">Non-isothermal kinetics</h5>
+    <p class="text-xs text-outline">Sestak &amp; Berggren (1971)</p>
+    <p class="text-xs text-on-surface-variant italic">Foundational work on the SB model equation.</p>
+    <div class="pt-2 border-t border-hairline-border flex justify-between text-[10px] text-outline font-label-caps">
+      <span class="">Thermochim. Acta</span>
+      <span class="">890 citations</span>
+    </div>
+  </div>
+</div></aside>
+</main>
+</div>
+
+
+</body></html>

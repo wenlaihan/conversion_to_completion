@@ -1,0 +1,330 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Estimate Kinetics - Kinetics Estimator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed-dim": "#b6c4ff",
+                    "primary-container": "#1c398e",
+                    "hairline-border": "#E5E7EB",
+                    "surface-bright": "#f9f9ff",
+                    "outline": "#757683",
+                    "on-secondary-fixed-variant": "#005323",
+                    "tertiary-fixed": "#ffdbcc",
+                    "surface-variant": "#dce2f7",
+                    "on-secondary": "#ffffff",
+                    "on-background": "#141b2b",
+                    "on-surface": "#141b2b",
+                    "secondary-fixed": "#99f7aa",
+                    "on-error": "#ffffff",
+                    "surface-dim": "#d3daef",
+                    "inverse-primary": "#b6c4ff",
+                    "tertiary": "#4d1a00",
+                    "on-primary-container": "#91a8ff",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "surface": "#f9f9ff",
+                    "on-surface-variant": "#444652",
+                    "inverse-on-surface": "#edf0ff",
+                    "primary": "#002271",
+                    "secondary": "#006d31",
+                    "warning-amber": "#D97706",
+                    "on-secondary-container": "#047234",
+                    "tertiary-container": "#712a00",
+                    "surface-container-highest": "#dce2f7",
+                    "surface-container-high": "#e1e8fd",
+                    "on-primary-fixed": "#001550",
+                    "science-green": "#218242",
+                    "surface-offwhite": "#F9F9F7",
+                    "secondary-container": "#96f4a7",
+                    "surface-container-low": "#f1f3ff",
+                    "on-tertiary-container": "#f89261",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#793005",
+                    "inverse-surface": "#293040",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed-variant": "#254095",
+                    "deep-teal": "#1C398E",
+                    "on-secondary-fixed": "#00210a",
+                    "background": "#f9f9ff",
+                    "surface-container": "#e9edff",
+                    "secondary-fixed-dim": "#7dda90",
+                    "surface-tint": "#3f59ae",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#ffb695",
+                    "on-tertiary-fixed": "#351000",
+                    "on-error-container": "#93000a",
+                    "primary-fixed": "#dce1ff",
+                    "outline-variant": "#c5c5d3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "margin": "32px",
+                    "gutter": "24px",
+                    "container-max": "1200px"
+            },
+            "fontFamily": {
+                    "headline-lg": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "data-mono": [
+                            "JetBrains Mono"
+                    ],
+                    "label-caps": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "15px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "data-mono": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased min-h-screen flex">
+<!-- JSON Anchor: SideNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-inverse-surface border-r border-hairline-border dark:border-outline-variant h-screen w-64 fixed left-0 top-0 flex flex-col h-full py-unit-margin z-50">
+<div class="px-gutter mb-margin">
+<h1 class="font-headline-md text-headline-md font-semibold text-deep-teal dark:text-primary-fixed-dim">Kinetics Estimator</h1>
+<p class="text-on-surface-variant font-label-caps text-label-caps mt-unit">Precision Analysis</p>
+</div>
+<ul class="flex-1 px-unit">
+<!-- Active Tab: Estimate -->
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-deep-teal dark:text-primary-fixed-dim font-bold border-r-2 border-deep-teal dark:border-primary-fixed-dim bg-surface-container-low dark:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">calculate</span>
+                    Estimate
+                </a>
+</li>
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">compare_arrows</span>
+                    Compare Orders
+                </a>
+</li>
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">thermostat</span>
+                    Temperature
+                </a>
+</li>
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">leaderboard</span>
+                    Fit Data
+                </a>
+</li>
+<li class="mb-unit">
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3">library_books</span>
+                    Reference
+                </a>
+</li>
+</ul>
+<div class="px-gutter mt-auto flex items-center">
+<img class="w-8 h-8 rounded-full border border-hairline-border mr-3 object-cover" data-alt="A small circular avatar placeholder image showing a subtle silhouette of a scientist in a lab coat, designed in a minimalist high-key off-white and deep teal color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCU7ipwxvYfeaoQx-QrWk5ptyGzn4VuMQUeWY55Mh2ZjsaNhv_Yon3PDQ0z8fn2juNkc1MuBPGBnjishCbpJKVIO7CWa36WqGYiatXPXaVuDSLwSenTo_YRtCfm4I85Oa7n6QXIBx1Z4tJGmoD0ULdWcFsn5c48oqSoGIdE2Ksf1Ae1XSnyF-QYmgjEmp2N3wglLkiPG8MCqhgXaCCnPIqsLXiPpMQ1t4-TkL3h5fvI9FO0XXWAmCmr">
+<span class="font-data-mono text-data-mono text-on-surface-variant">User</span>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-64 w-[calc(100%-16rem)] flex flex-col min-h-screen">
+<!-- JSON Anchor: TopAppBar -->
+<header class="bg-surface dark:bg-background border-b border-hairline-border dark:border-outline-variant w-full h-16 sticky top-0 flex justify-between items-center px-gutter z-40">
+<h2 class="font-headline-lg text-headline-lg text-deep-teal dark:text-primary-fixed-dim">Estimate Kinetics</h2>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant dark:text-surface-variant hover:text-deep-teal dark:hover:text-primary-fixed-dim transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="text-on-surface-variant dark:text-surface-variant hover:text-deep-teal dark:hover:text-primary-fixed-dim transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+</div>
+</header>
+<div class="flex-1 p-gutter max-w-[1200px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Input Panel -->
+<section class="lg:col-span-5 flex flex-col gap-margin">
+<div class="bg-surface-container-lowest border border-hairline-border rounded p-6">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-6">What you measured</h3>
+<form class="flex flex-col gap-6">
+<!-- Conversion Field -->
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Conversion reached (%)</label>
+<input class="w-full bg-surface-container-lowest border border-hairline-border rounded px-4 py-2 font-data-mono text-data-mono focus:outline-none focus:border-deep-teal focus:ring-1 focus:ring-deep-teal transition-all tabular-nums" placeholder="e.g., 75" type="number">
+</div>
+<!-- Elapsed Time Field -->
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Elapsed time</label>
+<div class="flex">
+<input class="w-2/3 bg-surface-container-lowest border border-hairline-border rounded-l px-4 py-2 font-data-mono text-data-mono focus:outline-none focus:border-deep-teal focus:ring-1 focus:ring-deep-teal transition-all z-10 tabular-nums" placeholder="e.g., 120" type="number">
+<select class="w-1/3 bg-surface-container-low border border-hairline-border border-l-0 rounded-r px-2 py-2 font-data-mono text-data-mono text-on-surface-variant focus:outline-none focus:border-deep-teal focus:ring-1 focus:ring-deep-teal transition-all">
+<option>min</option>
+<option>s</option>
+<option>h</option>
+</select>
+</div>
+</div>
+<!-- Temperature Field -->
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Temperature</label>
+<div class="flex">
+<input class="w-2/3 bg-surface-container-lowest border border-hairline-border rounded-l px-4 py-2 font-data-mono text-data-mono focus:outline-none focus:border-deep-teal focus:ring-1 focus:ring-deep-teal transition-all z-10 tabular-nums" placeholder="e.g., 25" type="number">
+<select class="w-1/3 bg-surface-container-low border border-hairline-border border-l-0 rounded-r px-2 py-2 font-data-mono text-data-mono text-on-surface-variant focus:outline-none focus:border-deep-teal focus:ring-1 focus:ring-deep-teal transition-all">
+<option>°C</option>
+<option>K</option>
+</select>
+</div>
+</div>
+<!-- Reaction Order Dropdown -->
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Reaction order</label>
+<select class="w-full bg-surface-container-lowest border border-hairline-border rounded px-4 py-2 font-data-mono text-data-mono focus:outline-none focus:border-deep-teal focus:ring-1 focus:ring-deep-teal transition-all appearance-none cursor-pointer">
+<option selected="">1 — first order</option>
+<option>0 — zero order</option>
+<option>2 — second order</option>
+</select>
+</div>
+<button class="mt-4 w-full bg-deep-teal text-on-primary font-headline-md text-headline-md py-4 rounded transition-colors hover:bg-primary-container active:scale-[0.99]" type="button">
+                            Estimate
+                        </button>
+</form>
+</div>
+</section>
+<!-- Right Column: Results Area -->
+<section class="lg:col-span-7 flex flex-col gap-margin">
+<div class="bg-surface-container-lowest border border-hairline-border rounded p-6">
+<p class="font-body-lg text-body-lg text-deep-teal mb-8">
+                        Predicted kinetics based on a <span class="font-data-mono text-data-mono bg-surface-container-low px-1 rounded">1st order</span> reaction at <span class="font-data-mono text-data-mono bg-surface-container-low px-1 rounded">25°C</span>
+</p>
+<div class="mb-8">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-4">Time to reach</h4>
+<div class="mb-4 flex items-start justify-between gap-4 p-4 bg-[#FFFBEB] border-l-4 border-[#F59E0B] rounded-r"><div class="flex gap-3"><span class="material-symbols-outlined text-[#D97706]">info</span><div><p class="font-bold text-on-surface">Reaction order is assumed, not measured</p><p class="text-on-surface-variant text-body-md">At first order, 90% takes 59 h. At second order, the same measurement predicts 203 h.</p></div></div><a href="#" class="text-deep-teal font-semibold hover:underline whitespace-nowrap">Compare all orders</a></div><div class="w-full overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-hairline-border">
+<th class="py-2 px-4 font-label-caps text-label-caps text-on-surface-variant font-normal">Target Conversion</th>
+<th class="py-2 px-4 font-label-caps text-label-caps text-on-surface-variant font-normal text-right">Predicted Time</th>
+</tr>
+</thead>
+<tbody class="text-data-mono"><tr class="border-b border-hairline-border hover:bg-surface-bright transition-colors"><td class="py-3 px-4 tabular-nums">50.0%</td><td class="py-3 px-4 text-right tabular-nums">30.0 min</td></tr><tr class="border-b border-hairline-border hover:bg-surface-bright transition-colors"><td class="py-3 px-4 tabular-nums">75.0%</td><td class="py-3 px-4 text-right tabular-nums">60.0 min</td></tr><tr class="border-b border-hairline-border hover:bg-surface-bright transition-colors bg-surface-container-low/30"><td class="py-3 px-4 flex items-center gap-2 tabular-nums"><span class="w-2 h-2 rounded-full bg-deep-teal block"></span> 90.0%</td><td class="py-3 px-4 text-right font-bold text-deep-teal tabular-nums">100.0 min</td></tr><tr class="border-b border-hairline-border hover:bg-surface-bright transition-colors"><td class="py-3 px-4 tabular-nums">95.0%</td><td class="py-3 px-4 text-right tabular-nums">130.0 min</td></tr><tr class="border-b border-hairline-border hover:bg-surface-bright transition-colors"><td class="py-3 px-4 tabular-nums">99.0%</td><td class="py-3 px-4 text-right tabular-nums">200.0 min</td></tr><tr class="border-b border-hairline-border hover:bg-surface-bright transition-colors"><td class="py-3 px-4 tabular-nums">99.9%</td><td class="py-3 px-4 text-right tabular-nums">300.0 min</td></tr><tr class="border-b border-hairline-border hover:bg-surface-bright transition-colors"><td class="py-3 px-4 tabular-nums">100% (complete)</td><td class="py-3 px-4 text-right tabular-nums"><div class="inline-flex items-center gap-1 bg-surface-container-low text-on-surface-variant px-2 py-0.5 rounded-full text-[12px] font-medium">Never — asymptotic <span class="material-symbols-outlined text-[14px]">help_outline</span></div></td></tr></tbody>
+</table>
+</div>
+</div>
+<!-- Chart Placeholder -->
+<div>
+<h4 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-4">Conversion Curve</h4>
+<div class="w-full h-64 border border-hairline-border rounded bg-surface-bright relative flex items-center justify-center overflow-hidden">
+<!-- Using a generic placeholder for the chart aesthetic requested -->
+<div class="bg-cover bg-center w-full h-full opacity-60" data-alt="A minimalist scientific data visualization showing a smooth, asymptotic exponential decay curve representing a first-order chemical reaction. The chart uses a high-key off-white background with a single deep teal line graph, no gridlines, and a single prominent dot highlighting a specific data point. The aesthetic is clean, precise, and academic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAx8W-0E3A3fFa5yKKuCWSO5z8D4mFAGE5KglRsySquUTn1CEHVmwpo1QswVd9D2YMOZWtGPVzlTU4nGt7uUN9zwBZbIPys3-36OQchNMbL9GTCmfFOMKaPJ7YcDUXwR0u3C3NjS32lfshh5lvo1TRM7o8IDGzQj8orRu6BKVQE_88UQcR1ycqSg313Li8h3SICxKJLwv6he2VHbtOX5jI0fl6KmI3bc-Pf952sjbuD6netwlzen0T2')"></div>
+<!-- Overlay structural elements to mimic a basic chart without heavy charting libs -->
+<div class="absolute bottom-4 left-4 right-4 h-[1px] bg-outline-variant/30"></div>
+<div class="absolute top-4 bottom-4 left-4 w-[1px] bg-outline-variant/30"></div>
+</div>
+</div><div class="mt-6 pt-6 border-t border-hairline-border">
+    <details class="group cursor-pointer">
+        <summary class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider list-none flex items-center gap-2 hover:text-deep-teal transition-colors">
+            <span class="material-symbols-outlined text-[18px] transition-transform group-open:rotate-90">chevron_right</span>
+            Show the math
+        </summary>
+        <div class="mt-4 flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
+                <p class="text-on-surface-variant text-[13px]">1. Integrated rate law for first-order kinetics:</p>
+                <code class="bg-surface-container-low px-3 py-2 rounded font-data-mono text-data-mono tabular-nums block">ln([A]t/[A]0) = -kt</code>
+            </div>
+            <div class="flex flex-col gap-2">
+                <p class="text-on-surface-variant text-[13px]">2. Solve for rate constant (k) using measured data:</p>
+                <code class="bg-surface-container-low px-3 py-2 rounded font-data-mono text-data-mono tabular-nums block">k = -ln(1 - conversion) / t_measured</code>
+            </div>
+            <div class="flex flex-col gap-2">
+                <p class="text-on-surface-variant text-[13px]">3. Calculate time for target conversion:</p>
+                <code class="bg-surface-container-low px-3 py-2 rounded font-data-mono text-data-mono tabular-nums block">t_target = -ln(1 - target_conversion) / k</code>
+            </div>
+            <div class="flex flex-col gap-2">
+                <p class="text-on-surface-variant text-[13px]">4. Combined ratio formula:</p>
+                <code class="bg-surface-container-low px-3 py-2 rounded font-data-mono text-data-mono tabular-nums block">t_target = t_measured * ln(1 - target_conversion) / ln(1 - measured_conversion)</code>
+            </div>
+        </div>
+    </details>
+</div>
+</div>
+</section>
+</div>
+</main>
+
+
+</body></html>

@@ -1,0 +1,17 @@
+Asana-Math.otf
+--------------
+Vendored so the application does not depend on the font being installed locally.
+
+Source:   https://mirrors.ctan.org/fonts/Asana-Math/Asana-Math.otf  (CTAN)
+Project:  https://ctan.org/pkg/asana-math
+Author:   Apostolos Syropoulos
+Licence:  SIL Open Font License, Version 1.1 (OFL-1.1)
+          Full text: https://openfontlicense.org/
+
+The OFL text is not reproduced here because the copy served alongside the font on
+CTAN returned 404 at the time of vendoring; consult the link above for the
+authoritative terms before redistributing.
+
+Used for numerals, units and mathematical symbols throughout the interface. The
+font carries an OpenType MATH table, so it also renders the operators and
+relations that appear in the derivation steps.

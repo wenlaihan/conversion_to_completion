@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kinetics Estimator - Fit Data</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#dce2f7",
+                    "surface-dim": "#d3daef",
+                    "on-secondary-container": "#047234",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#141b2b",
+                    "on-secondary-fixed-variant": "#005323",
+                    "on-tertiary-container": "#f89261",
+                    "secondary-fixed-dim": "#7dda90",
+                    "tertiary-fixed": "#ffdbcc",
+                    "on-primary-fixed-variant": "#254095",
+                    "outline-variant": "#c5c5d3",
+                    "on-background": "#141b2b",
+                    "inverse-primary": "#b6c4ff",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "primary": "#002271",
+                    "surface-container-low": "#f1f3ff",
+                    "surface-offwhite": "#F9F9F7",
+                    "tertiary": "#4d1a00",
+                    "hairline-border": "#E5E7EB",
+                    "warning-amber": "#D97706",
+                    "on-secondary-fixed": "#00210a",
+                    "surface-tint": "#3f59ae",
+                    "background": "#f9f9ff",
+                    "surface-container-high": "#e1e8fd",
+                    "on-primary": "#ffffff",
+                    "secondary": "#006d31",
+                    "error-container": "#ffdad6",
+                    "on-error": "#ffffff",
+                    "surface": "#f9f9ff",
+                    "outline": "#757683",
+                    "primary-container": "#1c398e",
+                    "tertiary-fixed-dim": "#ffb695",
+                    "surface-variant": "#dce2f7",
+                    "inverse-surface": "#293040",
+                    "surface-container": "#e9edff",
+                    "on-tertiary-fixed-variant": "#793005",
+                    "on-primary-container": "#91a8ff",
+                    "inverse-on-surface": "#edf0ff",
+                    "deep-teal": "#1C398E",
+                    "on-primary-fixed": "#001550",
+                    "on-error-container": "#93000a",
+                    "secondary-container": "#96f4a7",
+                    "primary-fixed": "#dce1ff",
+                    "tertiary-container": "#712a00",
+                    "on-tertiary-fixed": "#351000",
+                    "on-surface-variant": "#444652",
+                    "secondary-fixed": "#99f7aa",
+                    "science-green": "#218242",
+                    "surface-bright": "#f9f9ff",
+                    "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "container-max": "1200px",
+                    "unit": "4px",
+                    "margin": "32px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "data-mono": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                    "body-md": ["15px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                    "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                    "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                    "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                    "data-mono": ["14px", { "lineHeight": "1.4", "fontWeight": "500" }]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        /* Hide scrollbar for clean aesthetic */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E5E7EB;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c5c5d3;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-body-md text-on-surface antialiased flex h-screen overflow-hidden selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest h-screen w-64 fixed left-0 top-0 border-r border-hairline-border flex flex-col py-margin z-20">
+<div class="px-gutter mb-8">
+<div class="font-headline-md text-headline-md font-semibold text-deep-teal mb-1">Kinetics Estimator</div>
+<div class="font-body-md text-body-md text-on-surface-variant">Precision Analysis</div>
+</div>
+<ul class="flex-1 flex flex-col">
+<!-- Inactive Tab -->
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-4 text-xl">calculate</span>
+<span class="font-body-md text-body-md font-medium">Estimate</span>
+</a>
+</li>
+<!-- Inactive Tab -->
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-4 text-xl">compare_arrows</span>
+<span class="font-body-md text-body-md font-medium">Compare Orders</span>
+</a>
+</li>
+<!-- Inactive Tab -->
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-4 text-xl">thermostat</span>
+<span class="font-body-md text-body-md font-medium">Temperature</span>
+</a>
+</li>
+<!-- Active Tab -->
+<li>
+<a class="flex items-center px-gutter py-3 bg-surface-container-low text-deep-teal font-bold border-r-2 border-deep-teal transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-4 text-xl" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+<span class="font-body-md text-body-md">Fit Data</span>
+</a>
+</li>
+<!-- Inactive Tab -->
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 scale-100 active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-4 text-xl">library_books</span>
+<span class="font-body-md text-body-md font-medium">Reference</span>
+</a>
+</li>
+</ul>
+<div class="px-gutter mt-auto pt-4 border-t border-hairline-border">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-deep-teal font-label-caps text-label-caps font-bold">
+                    US
+                </div>
+<div class="font-body-md text-body-md text-on-surface font-medium">User Scientist</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col ml-64 w-[calc(100%-16rem)] overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface w-full h-16 sticky top-0 border-b border-hairline-border flex justify-between items-center px-gutter z-10 shrink-0">
+<div class="flex items-center gap-4 invisible">
+<!-- Spacer for alignment since branding is in sidenav, but json mandates structural alignment -->
+<span class="font-headline-md text-headline-md font-bold text-deep-teal">Kinetics Estimator</span>
+</div>
+<div class="flex items-center gap-6">
+<!-- Search bar abstract -->
+<div class="relative hidden lg:block w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full bg-surface-container-lowest border border-hairline-border rounded-lg pl-9 pr-3 py-1.5 font-body-md text-body-md text-on-surface focus:outline-none focus:border-deep-teal focus:ring-1 focus:ring-deep-teal transition-all placeholder:text-outline-variant" placeholder="Search datasets..." type="text"/>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-deep-teal transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="hover:text-deep-teal transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<main class="flex-1 overflow-y-auto p-margin">
+<div class="max-w-container-max mx-auto h-full">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter h-full pb-8">
+<!-- Left Column: Experimental Data Input -->
+<div class="md:col-span-5 flex flex-col gap-6">
+<section class="bg-surface-container-lowest border border-hairline-border rounded-lg overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-hairline-border flex justify-between items-center bg-surface-offwhite">
+<h2 class="font-headline-md text-headline-md text-on-surface text-lg">Experimental Data</h2>
+<span class="bg-surface-container-highest text-deep-teal font-label-caps text-label-caps px-2 py-1 rounded">SET 1</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-offwhite border-b border-hairline-border">
+<th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant font-medium">Time (min)</th>
+<th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant font-medium">Conversion (%)</th>
+<th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant font-medium">Temp (°C)</th>
+<th class="px-4 py-3 w-10"></th>
+</tr>
+</thead>
+<tbody class="font-data-mono text-data-mono text-on-surface">
+<!-- Row 1 -->
+<tr class="border-b border-hairline-border hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-3">0.0</td>
+<td class="px-6 py-3">0.0</td>
+<td class="px-6 py-3 text-on-surface-variant">25.0</td>
+<td class="px-4 py-3 text-right"><span class="material-symbols-outlined text-outline-variant hover:text-error cursor-pointer text-sm opacity-0 group-hover:opacity-100 transition-opacity">close</span></td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-hairline-border hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-3">10.0</td>
+<td class="px-6 py-3">13.9</td>
+<td class="px-6 py-3 text-on-surface-variant">25.0</td>
+<td class="px-4 py-3 text-right"><span class="material-symbols-outlined text-outline-variant hover:text-error cursor-pointer text-sm opacity-0 group-hover:opacity-100 transition-opacity">close</span></td>
+</tr>
+<!-- Row 3 -->
+<tr class="border-b border-hairline-border hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-3">20.0</td>
+<td class="px-6 py-3">25.9</td>
+<td class="px-6 py-3 text-on-surface-variant">25.0</td>
+<td class="px-4 py-3 text-right"><span class="material-symbols-outlined text-outline-variant hover:text-error cursor-pointer text-sm opacity-0 group-hover:opacity-100 transition-opacity">close</span></td>
+</tr>
+<!-- Row 4 -->
+<tr class="border-b border-hairline-border hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-3">30.0</td>
+<td class="px-6 py-3">36.2</td>
+<td class="px-6 py-3 text-on-surface-variant">25.0</td>
+<td class="px-4 py-3 text-right"><span class="material-symbols-outlined text-outline-variant hover:text-error cursor-pointer text-sm opacity-0 group-hover:opacity-100 transition-opacity">close</span></td>
+</tr>
+<!-- Row 5 -->
+<tr class="border-b border-hairline-border hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-3">40.0</td>
+<td class="px-6 py-3">45.1</td>
+<td class="px-6 py-3 text-on-surface-variant">25.0</td>
+<td class="px-4 py-3 text-right"><span class="material-symbols-outlined text-outline-variant hover:text-error cursor-pointer text-sm opacity-0 group-hover:opacity-100 transition-opacity">close</span></td>
+</tr>
+<!-- Row 6 -->
+<tr class="border-b border-hairline-border hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-3">50.0</td>
+<td class="px-6 py-3">52.7</td>
+<td class="px-6 py-3 text-on-surface-variant">25.0</td>
+<td class="px-4 py-3 text-right"><span class="material-symbols-outlined text-outline-variant hover:text-error cursor-pointer text-sm opacity-0 group-hover:opacity-100 transition-opacity">close</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 bg-surface-offwhite flex items-center justify-between">
+<button class="flex items-center gap-2 text-deep-teal font-body-md text-body-md font-medium hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                                    Add row
+                                </button>
+<button class="text-on-surface-variant font-body-md text-body-md text-sm hover:text-deep-teal underline decoration-hairline-border underline-offset-4 transition-colors">
+                                    Paste from spreadsheet
+                                </button>
+</div>
+</section>
+</div>
+<!-- Right Column: Results & Visualization -->
+<div class="md:col-span-7 flex flex-col gap-6">
+<section class="bg-surface-container-lowest border border-hairline-border rounded-lg overflow-hidden flex flex-col h-full">
+<div class="px-6 py-4 border-b border-hairline-border bg-surface-offwhite flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-surface text-lg">Model Fit Results</h2>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-sm font-medium text-deep-teal border border-deep-teal rounded hover:bg-surface-container-low transition-colors">Export</button>
+</div>
+</div>
+<div class="p-6 flex flex-col gap-8">
+<!-- Key Metrics -->
+<div class="grid grid-cols-2 gap-8">
+<div>
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-1">Reaction Order (n)</div>
+<div class="font-headline-lg text-headline-lg text-deep-teal font-light tracking-tight">1.02</div>
+<div class="font-data-mono text-data-mono text-sm text-outline mt-1">± 0.05 (95% CI)</div>
+</div>
+<div>
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-1">Rate Constant (k)</div>
+<div class="font-headline-lg text-headline-lg text-deep-teal font-light tracking-tight">0.015 <span class="text-lg">min⁻¹</span></div>
+<div class="font-data-mono text-data-mono text-sm text-outline mt-1">± 0.002 (95% CI)</div>
+</div>
+</div>
+<!-- Goodness of Fit -->
+<div class="flex items-center gap-6 pt-4 border-t border-hairline-border border-dashed">
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Goodness of Fit</div>
+<div class="flex gap-6 font-data-mono text-data-mono text-on-surface">
+<div><span class="text-outline mr-2">R²</span>0.998</div>
+<div><span class="text-outline mr-2">RMSE</span>0.45%</div>
+</div>
+</div>
+<!-- Visualization: Scatter Plot -->
+<div class="flex-1 min-h-[300px] border border-hairline-border rounded bg-surface-offwhite relative p-4 flex flex-col">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant absolute top-4 left-4 z-10">Fitted Model vs Measured Data</h3>
+<!-- Abstract SVG Chart representation -->
+<div class="w-full h-full flex-1 relative mt-6">
+<!-- Y Axis Labels -->
+<div class="absolute left-0 top-0 bottom-6 w-8 flex flex-col justify-between text-[10px] text-outline font-data-mono items-end pr-2">
+<span>60</span>
+<span>40</span>
+<span>20</span>
+<span>0</span>
+</div>
+<!-- X Axis Labels -->
+<div class="absolute left-8 right-0 bottom-0 h-6 flex justify-between text-[10px] text-outline font-data-mono px-2">
+<span>0</span>
+<span>20</span>
+<span>40</span>
+<span>60</span>
+</div>
+<!-- Chart Area -->
+<div class="absolute left-8 top-0 right-2 bottom-6 border-l border-b border-hairline-border">
+<!-- Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+<div class="w-full border-t border-hairline-border opacity-50"></div>
+<div class="w-full border-t border-hairline-border opacity-50"></div>
+<div class="w-full border-t border-hairline-border opacity-50"></div>
+<div class="w-full"></div>
+</div>
+<svg class="w-full h-full preserve-3d overflow-visible" preserveaspectratio="none" viewbox="0 0 100 100">
+<!-- Smooth Fitted Curve -->
+<path d="M 0 100 Q 20 80, 50 50 T 100 20" fill="none" stroke="#1C398E" stroke-linecap="round" stroke-width="1.5"></path>
+<!-- Data Points (Scatter) -->
+<circle cx="0" cy="100" fill="#ffffff" r="1.5" stroke="#047234" stroke-width="1"></circle>
+<circle cx="16.6" cy="76" fill="#ffffff" r="1.5" stroke="#047234" stroke-width="1"></circle>
+<circle cx="33.3" cy="56.8" fill="#ffffff" r="1.5" stroke="#047234" stroke-width="1"></circle>
+<circle cx="50" cy="42" fill="#ffffff" r="1.5" stroke="#047234" stroke-width="1"></circle>
+<circle cx="66.6" cy="27" fill="#ffffff" r="1.5" stroke="#047234" stroke-width="1"></circle>
+<circle cx="83.3" cy="15" fill="#ffffff" r="1.5" stroke="#047234" stroke-width="1"></circle>
+</svg>
+</div>
+</div>
+</div>
+<!-- Visualization: Residuals -->
+<div class="h-[120px] border border-hairline-border rounded bg-surface-offwhite relative p-4 flex flex-col">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant absolute top-2 left-4 z-10">Residuals</h3>
+<div class="w-full h-full flex-1 relative mt-4">
+<div class="absolute left-8 top-0 right-2 bottom-4 border-l border-b border-hairline-border">
+<!-- Zero Line -->
+<div class="absolute top-1/2 left-0 w-full border-t border-outline border-dashed opacity-30 -translate-y-px"></div>
+<svg class="w-full h-full preserve-3d overflow-visible" preserveaspectratio="none" viewbox="0 0 100 100">
+<!-- Residual Bars -->
+<line stroke="#ba1a1a" stroke-width="0.5" x1="0" x2="0" y1="50" y2="50"></line>
+<circle cx="0" cy="50" fill="#ba1a1a" r="1"></circle>
+<line stroke="#ba1a1a" stroke-width="0.5" x1="16.6" x2="16.6" y1="50" y2="42"></line>
+<circle cx="16.6" cy="42" fill="#ba1a1a" r="1"></circle>
+<line stroke="#ba1a1a" stroke-width="0.5" x1="33.3" x2="33.3" y1="50" y2="55"></line>
+<circle cx="33.3" cy="55" fill="#ba1a1a" r="1"></circle>
+<line stroke="#ba1a1a" stroke-width="0.5" x1="50" x2="50" y1="50" y2="48"></line>
+<circle cx="50" cy="48" fill="#ba1a1a" r="1"></circle>
+<line stroke="#ba1a1a" stroke-width="0.5" x1="66.6" x2="66.6" y1="50" y2="60"></line>
+<circle cx="66.6" cy="60" fill="#ba1a1a" r="1"></circle>
+<line stroke="#ba1a1a" stroke-width="0.5" x1="83.3" x2="83.3" y1="50" y2="45"></line>
+<circle cx="83.3" cy="45" fill="#ba1a1a" r="1"></circle>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

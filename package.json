@@ -1,0 +1,32 @@
+{
+  "name": "kinetics-time-to-conversion",
+  "version": "1.0.0",
+  "description": "Calculation engine for the Kinetics Time-to-Conversion Estimator",
+  "type": "module",
+  "main": "dist/api/solve.js",
+  "exports": {
+    ".": "./dist/api/solve.js",
+    "./engine": "./dist/api/solve.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "serve": "node --experimental-strip-types src/http/server.ts",
+    "start": "npm run build && node --experimental-strip-types src/http/server.ts",
+    "lint:prose": "node scripts/no-em-dash.mjs",
+    "pretest": "node scripts/no-em-dash.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "@vitest/coverage-v8": "^2.1.8",
+    "playwright": "^1.62.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
