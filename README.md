@@ -31,6 +31,14 @@ npm start       # builds, then serves on http://localhost:3000
 | `npm run coverage` | Vitest with v8 coverage |
 | `npm run lint:prose` | punctuation guard on its own |
 
+### Deploying
+
+The app is fully static at runtime: the pages import the compiled engine directly
+and no server code runs in production. `npm run build:site` compiles the engine and
+copies it to `web/dist/` (a gitignored deploy artifact), so any host that serves
+`web/` as its root works. `wrangler.jsonc` configures Cloudflare Workers to do
+exactly that: `npx wrangler deploy` builds and publishes.
+
 One per-clone setup step enables the pre-commit guard:
 
 ```

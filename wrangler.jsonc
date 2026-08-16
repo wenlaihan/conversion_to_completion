@@ -1,0 +1,14 @@
+// Cloudflare Workers config: a purely static deployment. The engine runs in the
+// browser; no Worker script is needed. The build command compiles the TypeScript
+// engine and copies it to web/dist so the pages' ../dist imports resolve when web/
+// is served as the site root.
+{
+  "name": "rxnclock",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "./web"
+  },
+  "build": {
+    "command": "npm run build:site"
+  }
+}
