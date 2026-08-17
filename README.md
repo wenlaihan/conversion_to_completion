@@ -6,6 +6,95 @@ that, and it is careful about what it does not know: where the reaction order wa
 assumed rather than measured, the spread across plausible orders is the headline and
 the single number is a detail inside it.
 
+## What it looks like
+
+The mechanism is a node map you build by dragging one species onto another. After a
+fit, each arrow carries its own rate constant twice over: stroke width and greyscale
+both scale with the constant, so the fast step reads heavy and dark at a glance.
+
+![The mechanism canvas after a fit: a four-species cycle with a leak, each arrow
+labelled with its fitted constant, faster steps drawn heavier and darker](docs/media/network-map-cycle.png)
+
+Reversible steps render as two opposing arrows (a chemist's equilibrium, never a
+double-headed resonance arrow), with each direction's constant beside its own shaft:
+
+![A reversible four-species chain after fitting, opposing arrow pairs with
+per-direction constants](docs/media/network-map-fitted.png)
+
+Every example card carries its network as a thumbnail drawn in the same visual
+language, so the gallery reads as a family of mechanisms before any text:
+
+![The example gallery: six cards, each with a small node-and-arrow drawing of its
+mechanism](docs/media/example-gallery.png)
+
+On the Estimate page, one measured point plus a model gives the whole curve, with
+the candidate orders overlaid and the promised times (50%, 90%, 99%) annotated:
+
+![The Estimate figure: conversion versus time with n = 0, 1, 2 overlaid, annotated
+at 50, 90 and 99 percent conversion](docs/media/estimate-figure.png)
+
+## The example mechanisms
+
+Each example ships with synthetic data generated from stated constants, so every
+fit is verifiable against ground truth. The scheme text on the left is the app's
+own input syntax; the graph is the network it draws.
+
+**E1, single conversion** (`A -> B`, k = 0.35 h⁻¹):
+
+```mermaid
+graph LR
+  A((A)) -- "0.35" --> B((B))
+```
+
+**E2, reversible pair** (`A = B`, k = 0.30 / 0.075 h⁻¹):
+
+```mermaid
+graph LR
+  A((A)) -- "0.30" --> B((B))
+  B -- "0.075" --> A
+```
+
+**E3, sequential intermediate** (`A -> B`, `B -> C`):
+
+```mermaid
+graph LR
+  A((A)) -- "0.35" --> B((B)) -- "0.08" --> C((C))
+```
+
+**E4, four-species reversible chain** (`A = B`, `B = C`, `C = D`, six constants):
+
+```mermaid
+graph LR
+  A((A)) -- "0.5" --> B((B))
+  B -- "0.2" --> A
+  B -- "0.2" --> C((C))
+  C -- "0.1" --> B
+  C -- "0.08" --> D((D))
+  D -- "0.04" --> C
+```
+
+**E5, branched pathways** (`A -> B`, `A -> C`):
+
+```mermaid
+graph LR
+  B((B)) 
+  A((A)) -- "0.3" --> B
+  A -- "0.12" --> C((C))
+```
+
+**E6, complex 2D network** (`A -> B`, `B -> C`, `C -> A`, `C -> D`; a loop with a
+leak that no chain can mimic):
+
+```mermaid
+graph LR
+  A((A)) -- "0.45" --> B((B)) -- "0.4" --> C((C))
+  C -- "0.35" --> A
+  C -- "0.05" --> D((D))
+```
+
+Multi-word species from real CSV headers work the same way, quoted:
+`"Starting Material" -> "Product 1"`.
+
 ## Pages
 
 - **Estimate**: one measured point, a kinetic model, and the time to any conversion,
