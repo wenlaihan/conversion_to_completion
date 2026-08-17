@@ -8,6 +8,7 @@ import {
   trueRateConstant,
 } from '../dist/lib/network.js';
 import { smartCells } from '../dist/lib/csv.js';
+import { fmtRate } from '../dist/lib/format.js';
 import { detectMassBalance } from '../dist/lib/massBalance.js';
 import { buildZip, fitDataCsv } from '../dist/lib/export.js';
 import { currentPoint, applyFittedOrder } from './estimate.js';
@@ -803,11 +804,11 @@ const renderNetwork = (blocks) => {
           : '';
       const obsUnits = rateConstantUnits(1, timeUnits);
       const trueUnits = rateConstantUnits(step.molecularity ?? 1, timeUnits);
-      const spread = step.kSpread !== null ? ` ± ${esc(fmtNum(step.kSpread))}` : '';
+      const spread = step.kSpread !== null ? ` ± ${esc(fmtRate(step.kSpread))}` : '';
 
       if (cats.length === 0) {
         return `<div class="readout"${fullArrow}><div class="k"><span class="lit">k</span> ${arrow}</div>
-           <div class="v">${esc(fmtNum(step.k))}${spread}<span class="u">${esc(trueUnits)}</span></div></div>`;
+           <div class="v">${esc(fmtRate(step.k))}${spread}<span class="u">${esc(trueUnits)}</span></div></div>`;
       }
       const catBrackets = cats.map((c) => `[${esc(disp(c))}]`).join('');
       rateLaws.push(
@@ -815,13 +816,13 @@ const renderNetwork = (blocks) => {
           `<span class="ratelaw-note">\u00b7 k<sub>obs</sub> = k${catBrackets}</span>`,
       );
       const obsTile = `<div class="readout"${fullArrow}><div class="k"><span class="lit">k obs</span> ${arrow}</div>
-           <div class="v">${esc(fmtNum(step.k))}${spread}<span class="u">${esc(obsUnits)}</span></div></div>`;
+           <div class="v">${esc(fmtRate(step.k))}${spread}<span class="u">${esc(obsUnits)}</span></div></div>`;
       const trueTile =
         kTrue === null
           ? `<div class="readout"><div class="k"><span class="lit">k</span> ${arrow}</div>
                <div class="v" style="color:var(--on-error-container)">?<span class="u">enter [${esc(cats.join(', '))}]</span></div></div>`
           : `<div class="readout"><div class="k"><span class="lit">k</span> ${arrow}</div>
-               <div class="v">${esc(fmtNum(kTrue))}<span class="u">${esc(trueUnits)}</span></div></div>`;
+               <div class="v">${esc(fmtRate(kTrue))}<span class="u">${esc(trueUnits)}</span></div></div>`;
       return obsTile + trueTile;
     })
     .join('');
@@ -1271,7 +1272,9 @@ const drawCanvas = () => {
   const ring = names.length <= 3 ? 62 : names.length <= 5 ? 80 : 92;
   const pos = new Map(
     names.map((n, i) => {
-      const angle = -Math.PI / 2 + (2 * Math.PI * i) / names.length;
+      // Two species read left to right like a written scheme; three or more ring.
+      const angle =
+        names.length === 2 ? Math.PI - Math.PI * i : -Math.PI / 2 + (2 * Math.PI * i) / names.length;
       return [n, { x: CW / 2 + ring * Math.cos(angle), y: CH / 2 + ring * Math.sin(angle) }];
     }),
   );
@@ -1452,7 +1455,9 @@ const drawCanvas = () => {
     const w = box.width + pad * 2;
     const h = box.height + pad * 2;
     svg.setAttribute('viewBox', `${(box.x - pad).toFixed(1)} ${(box.y - pad).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
-    svg.style.maxWidth = `${Math.round(Math.min(340, Math.max(200, w * 1.02)))}px`;
+    // Exactly 1:1 with the drawing: a sparse scheme uses less of the page instead of
+    // inflating its nodes, so node size is identical across every example.
+    svg.style.maxWidth = `${Math.round(w)}px`;
   }
   if (overlay.length > 0) svg.insertAdjacentHTML('beforeend', overlay.join(''));
   const legend = $('f-map-legend');

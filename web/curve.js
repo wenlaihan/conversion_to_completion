@@ -153,6 +153,47 @@ export const labelBox = (cx, cy, text, height = LINE_H) => {
 const hits = (a, b, pad = 2) =>
   a.x0 < b.x1 + pad && b.x0 < a.x1 + pad && a.y0 < b.y1 + pad && b.y0 < a.y1 + pad;
 
+/** Whether the segment (x1,y1)-(x2,y2) crosses the padded box, Liang-Barsky style. */
+const segmentHitsBox = (x1, y1, x2, y2, box, pad = 2) => {
+  const lo = { x: box.x0 - pad, y: box.y0 - pad };
+  const hi = { x: box.x1 + pad, y: box.y1 + pad };
+  let t0 = 0;
+  let t1 = 1;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  for (const [p, q] of [
+    [-dx, x1 - lo.x],
+    [dx, hi.x - x1],
+    [-dy, y1 - lo.y],
+    [dy, hi.y - y1],
+  ]) {
+    if (p === 0) {
+      if (q < 0) return false;
+    } else {
+      const r = q / p;
+      if (p < 0) {
+        if (r > t1) return false;
+        if (r > t0) t0 = r;
+      } else {
+        if (r < t0) return false;
+        if (r < t1) t1 = r;
+      }
+    }
+  }
+  return true;
+};
+
+/** Whether a label box lies on any plotted polyline: the item-1 rule made literal. */
+const boxHitsCurves = (box, curves) =>
+  curves.some((points) => {
+    for (let i = 1; i < points.length; i += 1) {
+      const a = points[i - 1];
+      const b = points[i];
+      if (segmentHitsBox(a[0], a[1], b[0], b[1], box)) return true;
+    }
+    return false;
+  });
+
 /**
  * The boxes a label may never be placed on top of.
  *
@@ -188,7 +229,7 @@ const axisFurniture = (scale, badgeBoxRect, asymptote) => {
  * label tries below, then to either side, before giving up its slot to a higher priority
  * neighbour.
  */
-export const placeAnnotations = (candidates, reserved = []) => {
+export const placeAnnotations = (candidates, reserved = [], curves = []) => {
   /**
    * Two passes when one is not enough.
    *
@@ -228,6 +269,7 @@ export const placeAnnotations = (candidates, reserved = []) => {
           const box = labelBox(x, yAt, label);
           if (box.y0 < 3 || box.y1 > BOT - 2) continue;
           if (taken.some((r) => hits(box, r))) continue;
+          if (boxHitsCurves(box, curves)) continue;
           taken.push(box);
           return { ...box, y: yAt, text: label, mark };
         }
@@ -235,11 +277,26 @@ export const placeAnnotations = (candidates, reserved = []) => {
       return null;
     };
 
+    // The page opens with "How long to 50%, 90%, 99%?", so those three labels are a
+    // promise: when every candidate position is occupied they place forced rather
+    // than dropping, and the halo keeps a forced label legible. Only the unpromised
+    // 25 and 75 marks may still yield entirely.
+    const PROMISED = new Set([0.5, 0.9, 0.99]);
     for (const level of KEEP_ORDER) {
       const mark = candidates.find((c) => c.X === level);
       if (!mark) continue;
       const spot = attempt(mark);
-      if (spot) placed.push(spot);
+      if (spot) {
+        placed.push(spot);
+      } else if (PROMISED.has(level)) {
+        forced += 1;
+        placed.push({
+          ...labelBox(mark.px, mark.py - 15, mark.label),
+          y: mark.py - 15,
+          text: mark.label,
+          mark,
+        });
+      }
     }
     // Anything not a standard percentile, such as the completion point at n < 1, is the
     // answer rather than a gridline, so it lands even if it has to be forced in.
@@ -372,54 +429,73 @@ export const drawCurve = (svg, opts) => {
    * column of anonymous grey words, and the dash carries the pairing for anyone who
    * cannot separate the hues.
    */
+  const curveGeometry = series.map((s) => s.points);
   const ends = series
     .filter((s) => s.label && s.points.length > 0)
     .map((s) => ({ s, x: s.points[s.points.length - 1][0], y: s.points[s.points.length - 1][1] }))
     .sort((a, b) => a.y - b.y);
 
+  // Item 1: every curve name lives in one legend rail past the right plot edge,
+  // staggered apart. A curve that stops mid-plot (a low order finishing early) gets
+  // a dotted leader from its endpoint out to its name, so no label ever sits on a
+  // plotted line, a gridline, or another label.
+  // A curve that reaches the right edge is named in the rail column there; one that
+  // finishes early is named right beside its own endpoint, dodging curves and other
+  // labels, so no leader ever spans the plot.
+  const railX = L + PLOT_W;
   let lastY = -Infinity;
   for (const end of ends) {
-    const centre = end.x + 26 + end.s.label.length * 3;
+    end.nearRail = end.x >= railX - 40;
+    end.baseX = end.nearRail ? railX : end.x;
+    const centre = end.baseX + 26 + end.s.label.length * 3;
+    const box = (yAt) => labelBox(centre, yAt, end.s.label);
     const free = (yAt) =>
-      yAt >= TOP + 6 && yAt <= BOT - 6 && !taken.some((r) => hits(labelBox(centre, yAt, end.s.label), r));
-
-    if (end.x >= L + PLOT_W - 4) {
-      // Ends at the right margin: this is the legend column, so stack down it.
+      yAt >= TOP + 6 &&
+      yAt <= BOT - 2 &&
+      !taken.some((r) => hits(box(yAt), r)) &&
+      (end.nearRail || !boxHitsCurves(box(yAt), curveGeometry));
+    if (end.nearRail) {
       let yAt = Math.max(end.y, lastY + LINE_H + 1);
-      for (let step = 0; step < 12 && !free(yAt); step += 1) yAt += LINE_H;
-      end.labelY = Math.min(yAt, BOT - 6);
+      for (let step = 0; step < 14 && !free(yAt); step += 1) yAt += LINE_H;
+      end.labelY = Math.min(yAt, BOT - 2);
       lastY = end.labelY;
     } else {
-      // Ends inside the plot, where a curve that finishes stops. Stay near the line end.
-      end.labelY = [0, -16, 16, -30, 30, -44, 44].map((dy) => end.y + dy).find(free) ?? end.y;
+      end.labelY =
+        [-14, 14, -28, 28, -42, 42, 0].map((dy) => end.y + dy).find(free) ?? end.y - 14;
     }
-    taken.push(labelBox(centre, end.labelY, end.s.label));
+    taken.push(box(end.labelY));
   }
 
   const directLabels = ends
-    .map(({ s, x, y: endY, labelY }) => {
-      const nudged = Math.abs(labelY - endY) > 1.5;
+    .map(({ s, x, y: endY, labelY, baseX }) => {
+      const nudged = Math.abs(labelY - endY) > 1.5 || baseX - x > 4;
       const connector = nudged
-        ? `<path d="M${(x + 1).toFixed(1)} ${endY.toFixed(1)} L${(x + 5).toFixed(1)} ${labelY.toFixed(1)}" ` +
+        ? `<path d="M${(x + 1).toFixed(1)} ${endY.toFixed(1)} L${(baseX + 5).toFixed(1)} ${labelY.toFixed(1)}" ` +
           `fill="none" stroke="var(--outline-variant)" stroke-width="1" stroke-dasharray="1 2"/>`
         : '';
       const swatch =
-        `<line x1="${(x + 7).toFixed(1)}" y1="${labelY.toFixed(1)}" x2="${(x + 21).toFixed(1)}" ` +
+        `<line x1="${(baseX + 7).toFixed(1)}" y1="${labelY.toFixed(1)}" x2="${(baseX + 21).toFixed(1)}" ` +
         `y2="${labelY.toFixed(1)}" stroke="${s.colour}" stroke-width="${s.emphasis ? 2.5 : 1.6}" ` +
         `${s.dash ? `stroke-dasharray="${s.dash}"` : ''} stroke-linecap="round"/>`;
       return (
         connector +
         swatch +
-        `<text x="${(x + 26).toFixed(1)}" y="${(labelY + 4).toFixed(1)}" font-size="12" ` +
+        `<text x="${(baseX + 26).toFixed(1)}" y="${(labelY + 4).toFixed(1)}" font-size="12" ` +
         `fill="${s.emphasis ? 'var(--primary)' : s.colour}" ` +
-        `font-weight="${s.emphasis ? 600 : 500}" font-family="var(--sans)">${esc(s.label)}</text>`
+        `font-weight="${s.emphasis ? 600 : 500}" font-family="var(--sans)" ` +
+        `paint-order="stroke" stroke="var(--lowest)" stroke-width="3" ` +
+        `stroke-linejoin="round">${esc(s.label)}</text>`
       );
     })
     .join('');
 
   // The pass hands back everything it occupied; "your point" below must dodge the
   // annotation labels too, not only what stood before them.
-  const { placed: annotationSlots, taken: occupied } = placeAnnotations(annotations, taken);
+  const { placed: annotationSlots, taken: occupied } = placeAnnotations(
+    annotations,
+    taken,
+    curveGeometry,
+  );
 
   const annotationMarks = annotationSlots
     .map(({ mark, cx, y: labelY, text: slotText = mark.label }) => {
@@ -437,7 +513,9 @@ export const drawCurve = (svg, opts) => {
         `<circle cx="${mark.px.toFixed(1)}" cy="${mark.py.toFixed(1)}" r="4.5" fill="var(--primary)" ` +
         `stroke="var(--lowest)" stroke-width="2"/>` +
         `<text x="${cx.toFixed(1)}" y="${(labelY + 4).toFixed(1)}" text-anchor="middle" font-size="12" ` +
-        `font-weight="600" fill="var(--primary)" font-family="var(--sans)">${esc(slotText)}</text>`
+        `font-weight="600" fill="var(--primary)" font-family="var(--sans)" ` +
+        `paint-order="stroke" stroke="var(--lowest)" stroke-width="3.5" ` +
+        `stroke-linejoin="round">${esc(slotText)}</text>`
       );
     })
     .join('');
@@ -476,14 +554,17 @@ export const drawCurve = (svg, opts) => {
           box.x1 < L + PLOT_W - 2 &&
           box.y0 > 3 &&
           box.y1 < BOT - 2 &&
-          !occupied.some((r) => hits(box, r))
+          !occupied.some((r) => hits(box, r)) &&
+          !boxHitsCurves(box, curveGeometry)
         );
       }) ?? spots[4];
     pointText =
       `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="6" fill="var(--lowest)" ` +
       `stroke="var(--on-surface)" stroke-width="2.5"/>` +
       `<text x="${side.x.toFixed(1)}" y="${(my + 4 + side.dy).toFixed(1)}" text-anchor="${side.anchor}" ` +
-      `font-size="12" font-weight="600" fill="var(--on-surface)" font-family="var(--sans)">your point</text>`;
+      `font-size="12" font-weight="600" fill="var(--on-surface)" font-family="var(--sans)" ` +
+      `paint-order="stroke" stroke="var(--lowest)" stroke-width="3.5" ` +
+      `stroke-linejoin="round">your point</text>`;
   }
   const point = pointText;
 

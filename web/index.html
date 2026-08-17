@@ -478,6 +478,7 @@ textarea:focus{outline:none;border-color:var(--deep-teal)}
           <div class="readout"><div class="k">To 99%</div><div class="v" id="t-99">n/a</div></div>
           <div class="readout"><div class="k">Rate constant <span class="lit">k</span></div><div class="v" id="k-value">n/a</div></div>
         </div>
+        <div class="sentence" id="target-whatif"></div>
 
         <div class="sr" aria-live="polite" id="announce"></div>
         <table class="sr">
@@ -548,7 +549,7 @@ textarea:focus{outline:none;border-color:var(--deep-teal)}
             <div class="note">Measured, never read off the balanced equation.</div>
             <label class="checkline" id="panel-orders">
               <input type="checkbox" id="orders-toggle">
-              <span>Any order fits one point. Show all five.</span>
+              <span>Any order fits one point. Show n = 0, 1 and 2.</span>
             </label>
           </div>
           <div class="field">
@@ -557,6 +558,7 @@ textarea:focus{outline:none;border-color:var(--deep-teal)}
             <input id="s-c0" type="range" min="0.1" max="5" step="0.05" value="1.7"
                    aria-label="Initial concentration">
             <div class="note" id="c0-note">Changes k and its units, not the curve.</div>
+            <div class="sentence" id="c0-whatif"></div>
           </div>
           <div class="note"><a href="#fit">Have a full trace? Fit it.</a></div>
         </div>
@@ -595,12 +597,12 @@ textarea:focus{outline:none;border-color:var(--deep-teal)}
             <div class="row"><input id="i-ea" type="text" inputmode="decimal" autocomplete="off" value="50" step="any" min="0" max="400"></div>
             <input id="s-ea" type="range" min="20" max="200" step="1" value="50"
                    aria-label="Activation energy">
-            <div class="note">Heating clears the same barrier more often. It does not lower it.</div>
+            <div class="note">Raising the temperature does not lower the barrier; it gives more
+              molecules enough energy to cross it.</div>
           </div>
 
           <div class="sentence" id="t-sentence"></div>
-          <div class="readout"><div class="k">Q10</div>
-            <div class="v" id="q10-value">n/a</div></div>
+          <div class="note" id="rate-per-ten"></div>
           <div id="t-cautions"></div>
 
           <details id="why-one-number">
@@ -868,8 +870,8 @@ time   signal
        that clear the same barrier [<a href="#ref3">3</a>].</div>
     <p>"The rate roughly doubles every ten degrees" is a rule of thumb, not a law. It holds near
        Ea &#8776; 53 kJ/mol at room temperature; at 100 kJ/mol the same ten-kelvin step is a factor of
-       3.7. The Q10 read-out on Estimate is computed from your current activation energy rather than
-       asserted.</p>
+       3.7. The per-ten-degree factor shown on Estimate is computed from your current activation
+       energy rather than asserted.</p>
     <p>One honest caveat: a straight line on an Arrhenius plot is not on its own evidence that the
        activation energy is temperature independent [<a href="#ref18">18</a>]. Over a narrow range
        many non-Arrhenius models also look straight.</p>

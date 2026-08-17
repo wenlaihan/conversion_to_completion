@@ -465,3 +465,79 @@ each adjacent to its own arrow. Screenshot 09-greyscale-arrows.png.
   suppress-next-click flag self-clears on a zero-timeout rather than waiting for a
   click that may never come. Verified: dragging B's body onto A writes "A <-> B",
   and a plain click immediately afterwards still selects.
+
+## Round 7 (Estimate figure, precision, copy, what-ifs, canvas scale)
+
+### Inventory
+
+- Estimate figure: `web/estimate.js` (buildFigure) rendering through `web/curve.js`
+  (drawCurve). Order label sites found: curve end labels (ghost orders and the live
+  curve), the corner condition badge's "n = ..." row, and the spread strip's per-dot
+  names. The spread strip is a separate captioned figure whose dots need identity,
+  so "once per figure" is enforced on the main chart.
+- Copy: the barrier note and the Q10 tile in `web/index.html`; a Q10 cross-reference
+  on Learn.
+- Formatters: page-local `fmtNum`/`fmtTrim`/`fmtSmart`/`pct` in `web/estimate.js`
+  and a second `fmtNum` in `web/fit.js`, the duplication item 2 removes.
+- Example networks: `drawCanvas` in `web/fit.js`; two species sat on a vertical
+  ring axis, and a min-width clamp inflated sparse schemes.
+
+### Work items
+
+| # | Change | Verified |
+|---|---|---|
+| 1 | Kept: the per-curve legend-rail label (nearest the data). Removed: the badge's order row and the live curve's label suppression. All curve names now live in one staggered rail past the right plot edge, with a dotted leader for curves that finish mid-plot | Geometric audit at 1280, 1024, 620px: each of n=0, 0.5, 1, 1.5, 2 appears exactly once; zero label-label overlaps; zero label points inside any sampled curve path |
+| 2 | `src/lib/format.ts`: fmtPercent (integers), fmtTime (2 to 3 sig figs), fmtTemp (whole degrees unless finer), fmtRate (3 sig figs, scientific extremes), fmtFactor, meaningfulChange. Estimate and the fit tiles both import it | No decimal percentage on the page; times like "2.3 h", "12 min"; fit tile "k A to B 0.35 h⁻¹" through the same fmtRate; 15 tests in `tests/format.spec.ts` |
+| 3 | Rewritten, not cut: "Raising the temperature does not lower the barrier; it gives more molecules enough energy to cross it." One sentence, no tooltip | Cold-reader subagent review |
+| 4 | Two readouts added where the page supports them: C₀ (halving, under the C₀ control) and target (90 to 99 cost, under the readouts). Temperature already existed. Both suppressed on negligible change, unreachable times, or an active temperature switch; both computed from the same params as the plotted curve | At n=1 the C₀ readout stays silent (concentration cancels); at n=2 it reads "6.8 h to 14 h" and its "from" equals the To-90% tile; live updates on input |
+| 5 | Q10 gone everywhere (Estimate tile, Learn cross-reference). Now: "The rate constant increases about 1.9x for every 10 °C increase, near 25 °C.", unit written per the selected scale (10 K (= 10 °C); 18 °F (a 10 °C step)) | Recomputes with Ea: 1.9x at 50 kJ/mol, 3.7x at 100 kJ/mol, matching the Learn page's own stated factor; `q10 = arrheniusRatio(Ea, T, T+10)` asserted against exp(Ea/R (1/T - 1/(T+10))) in tests |
+| 6 | Two-species schemes lay out left to right; the canvas renders 1:1 with its drawing (min-width clamp removed), so node size no longer inflates on sparse schemes | E1, E2 horizontal; measured node radius 16.00px on E1, E2, E4, E6 alike |
+
+### Verification
+
+Battery: 422 tests green (15 new in format.spec.ts), typecheck clean, prose guard
+clean, zero console errors at 1280, 1024, 620px. Screenshots under
+`verification/round-7/`.
+
+### Cold-reader review (round 7 gate)
+
+First pass: sentences A, B, C all judged clear, correct, and in the notebook
+register (the reviewer independently re-derived the Arrhenius factors, 1.92x at
+50 kJ/mol and 3.70x at 100 kJ/mol, and the n = 2 concentration arithmetic). One
+blocker: the placement pass for time annotations dodged other labels and axis
+furniture but not the plotted curves themselves, so "99% at 4.5 h" and neighbours
+were struck through in the crowded views.
+
+Fixes: curves are now first-class placement obstacles (Liang-Barsky segment-vs-box
+tests over every sampled polyline reject any candidate position on a curve), all
+annotation text and "your point" carry a surface halo so even forced placements
+stay legible, sentence B became "increases by a factor of about 1.9" (the parse
+trap), sub-minute times read in seconds, and the n = 2 screenshot was re-captured
+from a clean state so it actually evidences the concentration sentences.
+
+### Re-check verdict
+
+GATE: PASS. The reviewer re-inspected all three regenerated captures at 3x zoom:
+no annotation or label struck through anywhere; halo knockouts read as intended in
+the crowded 66 °C switch view; the n = 2 capture evidences the concentration
+sentences, whose numbers the reviewer re-derived analytically (t50 = 1/(kC0),
+t90 = 9/(kC0), t99 = 99/(kC0)) and matched. Two observations noted as deliberate:
+in the most crowded five-order view the placement cascade prefers dropping a
+percentile annotation over forcing a collision (the values remain in the headline
+strip), and the spread strip's stagger leaders are hairline-busy but never
+overprint a glyph.
+
+### Post-gate polish (user feedback)
+
+- The candidate ghosts are three, not five: n = 0, 1 and 2, each keeping its fixed
+  palette slot so the colours never reshuffle; the toggle reads "Any order fits one
+  point. Show n = 0, 1 and 2."
+- The promised ladder always renders: the page opens with "How long to 50%, 90%,
+  99%?", so those three annotations now place forced (halo-protected) rather than
+  dropping when the plot is crowded; only the unpromised 25 and 75 marks may yield.
+  Verified present at 1280, 1024 and 620px. The 95% spread strip keeps its
+  per-order time labels as before.
+- Legend leaders shortened: a curve that finishes early is now named right beside
+  its own endpoint (curve-dodging, halo-backed) instead of being wired across the
+  plot to the rail; measured leader lengths dropped to 15 to 33px. Only curves that
+  actually reach the right edge use the rail column.

@@ -1,4 +1,12 @@
 import {
+  fmtFactor,
+  fmtPercent,
+  fmtRate,
+  fmtTemp,
+  fmtTime,
+  meaningfulChange,
+} from '../dist/lib/format.js';
+import {
   $,
   esc,
   announcer,
@@ -40,7 +48,10 @@ import {
  * Both are panels here, and both draw onto the figure above them.
  */
 
-const CANDIDATE_ORDERS = [0, 0.5, 1, 1.5, 2];
+// Three ghosts, not five: n = 0, 1 and 2 span the spread without the half-order
+// clutter. Each order keeps its fixed palette slot so the colours never reshuffle.
+const CANDIDATE_ORDERS = [0, 1, 2];
+const ORDER_SLOT = { 0: 0, 0.5: 1, 1: 2, 1.5: 3, 2: 4 };
 /** Halfway, the headline, the tail. More labels read as clutter before they read as data. */
 const ANNOTATION_LEVELS = [0.5, 0.9, 0.99];
 /** The conversion the candidate-order spread is read at. */
@@ -63,16 +74,10 @@ const fromKelvin = (K, unit) =>
 
 const unitLabel = (unit) => (unit === 'K' ? 'K' : unit === 'F' ? '°F' : '°C');
 
-const fmtNum = (v) => {
-  if (!Number.isFinite(v)) return 'n/a';
-  const a = Math.abs(v);
-  if (a >= 1e6) return v.toExponential(2);
-  if (a >= 1000) return v.toFixed(0);
-  if (a >= 100) return v.toFixed(1);
-  if (a >= 1) return v.toFixed(2);
-  if (a >= 0.001) return v.toPrecision(3);
-  return v.toExponential(2);
-};
+// The precision rules live in one shared module (item 2): integers for percent,
+// 2 to 3 significant figures for times and factors, whole degrees, and fixed
+// significant figures with scientific extremes for rate constants.
+const fmtNum = fmtRate;
 
 /** Trimmed: a set temperature or concentration is exact, so decimals are only noise. */
 const fmtTrim = (v, dp = 1) => (Number.isFinite(v) ? String(Number(v.toFixed(dp))) : 'n/a');
@@ -91,12 +96,13 @@ const TWO_DAYS_H = 48;
 const fmtSmart = (v) => {
   if (!isReachable(v)) return 'never';
   const minutes = v * (MINUTES_PER[state.timeUnit] ?? 1);
-  if (minutes < TWO_HOURS_MIN) return `${fmtNum(minutes)} min`;
+  if (minutes < 1) return `${fmtTime(minutes * 60)} s`;
+  if (minutes < TWO_HOURS_MIN) return `${fmtTime(minutes)} min`;
   const hours = minutes / 60;
-  if (hours <= TWO_DAYS_H) return `${fmtNum(hours)} h`;
-  return `${fmtNum(hours / 24)} d`;
+  if (hours <= TWO_DAYS_H) return `${fmtTime(hours)} h`;
+  return `${fmtTime(hours / 24)} d`;
 };
-const pct = (X) => `${(X * 100).toFixed(X >= 0.99 && X < 1 ? 1 : 0)}%`;
+const pct = fmtPercent;
 
 /* ------------------------------------------------------------------ *
  * State
@@ -225,38 +231,36 @@ const buildFigure = () => {
       colour: 'var(--outline)',
       dash: '4 5',
       faint: 0.75,
-      label: `${fmtTrim(fromKelvin(state.Tmeasure, state.tempUnit))} ${unitLabel(state.tempUnit)}`,
+      label: `${fmtTemp(fromKelvin(state.Tmeasure, state.tempUnit))} ${unitLabel(state.tempUnit)}`,
     });
   }
 
   if (state.showOrders) {
-    candidates.forEach((c, i) => {
+    candidates.forEach((c) => {
       if (c.n === state.n) return;
       const stop = c.sched.time(1);
+      const slot = ORDER_SLOT[c.n] ?? 2;
       series.push({
         points: sampleSeries(scale, c.sched.conv, isReachable(stop) ? stop : null),
-        colour: ORDER_COLOURS[i],
-        dash: ORDER_DASHES[i],
+        colour: ORDER_COLOURS[slot],
+        dash: ORDER_DASHES[slot],
         faint: 0.5,
         label: `n=${c.n}`,
       });
     });
   }
 
-  // When the live curve finishes on screen, its endpoint already carries the completion
-  // annotation, and its identity lives in the condition badge. A name at the same spot
-  // is a third claim on one corner, and it is the one claim that can yield.
-  const liveEndsOnScreen = isReachable(finish) && finish <= scale.hi;
+  // Item 1: the legend rail is the one place a curve is named, so the live curve
+  // always carries its label there; when shifted, temperature is what tells the two
+  // solid-versus-ghost curves apart, so it is the name.
   series.push({
     points: sampleSeries(scale, sched.conv, isReachable(finish) ? finish : null),
     colour: 'var(--primary)',
     dash: '',
     emphasis: true,
-    label: liveEndsOnScreen
-      ? ''
-      : shiftedAway
-        ? `${fmtTrim(fromKelvin(state.Tpredict, state.tempUnit))} ${unitLabel(state.tempUnit)}`
-        : `n=${state.n}`,
+    label: shiftedAway
+      ? `${fmtTemp(fromKelvin(state.Tpredict, state.tempUnit))} ${unitLabel(state.tempUnit)}`
+      : `n=${state.n}`,
   });
 
   const annotations = [];
@@ -291,7 +295,7 @@ const buildFigure = () => {
         X: Xs,
         px: scale.toPx(state.heatAt),
         py: PLOT_BOT - Xs * (PLOT_BOT - PLOT_TOP),
-        label: `${verb} to ${fmtTrim(fromKelvin(state.Tpredict, state.tempUnit))} ${unitLabel(state.tempUnit)}`,
+        label: `${verb} to ${fmtTemp(fromKelvin(state.Tpredict, state.tempUnit))} ${unitLabel(state.tempUnit)}`,
       });
     }
   }
@@ -310,16 +314,15 @@ const buildFigure = () => {
     series,
     scale,
     annotations,
-    // Symbols only: "order n = 0.5" says "order" twice.
+    // Symbols only, and no order: the legend rail is the one place orders appear.
     badge: [
-      `n = ${state.n}`,
       state.heatAt !== null && state.heatAt > 0 && shiftedAway
         ? `k = ${fmtNum(kMeasured)}\u2192${fmtNum(kLive)} ${kUnits()}`
         : `k = ${fmtNum(kLive)} ${kUnits()}`,
       `C₀ = ${fmtTrim(state.C0, 2)} M`,
       state.heatAt !== null && state.heatAt > 0 && shiftedAway
-        ? `T = ${fmtTrim(fromKelvin(state.Tmeasure, state.tempUnit))}\u2192${fmtTrim(fromKelvin(state.Tpredict, state.tempUnit))} ${unitLabel(state.tempUnit)}`
-        : `T = ${fmtTrim(fromKelvin(state.Tpredict, state.tempUnit))} ${unitLabel(state.tempUnit)}`,
+        ? `T = ${fmtTemp(fromKelvin(state.Tmeasure, state.tempUnit))}\u2192${fmtTemp(fromKelvin(state.Tpredict, state.tempUnit))} ${unitLabel(state.tempUnit)}`
+        : `T = ${fmtTemp(fromKelvin(state.Tpredict, state.tempUnit))} ${unitLabel(state.tempUnit)}`,
     ],
     // When the switch lands on the measured point itself, the ring stays but its words
     // yield to the switch annotation that shares the dot.
@@ -376,10 +379,16 @@ const buildFigure = () => {
         scale,
         title: `Time to ${pct(SPREAD_LEVEL)}`,
         marks: candidates
-          .map((c, i) => {
+          .map((c) => {
             const t = c.sched.time(SPREAD_LEVEL);
             return isReachable(t)
-              ? { t, colour: ORDER_COLOURS[i], emphasis: c.n === state.n, label: `n=${c.n}`, value: fmtSmart(t) }
+              ? {
+                  t,
+                  colour: ORDER_COLOURS[ORDER_SLOT[c.n] ?? 2],
+                  emphasis: c.n === state.n,
+                  label: `n=${c.n}`,
+                  value: fmtSmart(t),
+                }
               : null;
           })
           .filter(Boolean),
@@ -418,6 +427,36 @@ const renderReadouts = (ctx) => {
         : 'Changes k and its units, not the curve.';
   }
 
+  // Item 4: the concentration what-if, in the temperature sentence's register,
+  // computed from the same params as the plotted curve. Suppressed while a
+  // temperature switch is active (the comparison would mix schedules), when either
+  // time is unreachable, and when the change is negligible, which is exactly the
+  // n = 1 case the note above already explains.
+  const whatifC0 = $('c0-whatif');
+  if (whatifC0) {
+    const live = paramsAt(state.n, ctx.kLive);
+    const t90Now = ctx.sched.time(0.9);
+    const t90Half = timeToConversion(0.9, { ...live, C0: state.C0 / 2 });
+    const show =
+      !ctx.stepActive &&
+      isReachable(t90Now) &&
+      isReachable(t90Half) &&
+      meaningfulChange(t90Now, t90Half);
+    whatifC0.innerHTML = show
+      ? `Halving C₀ to ${esc(fmtTrim(state.C0 / 2, 2))} M moves 90% conversion from ` +
+        `<b>${esc(fmtSmart(t90Now))}</b> to <b>${esc(fmtSmart(t90Half))}</b>.`
+      : '';
+  }
+  const whatifTarget = $('target-whatif');
+  if (whatifTarget) {
+    const t90 = ctx.sched.time(0.9);
+    const t99 = ctx.sched.time(0.99);
+    const show = isReachable(t90) && isReachable(t99) && meaningfulChange(t90, t99);
+    whatifTarget.innerHTML = show
+      ? `Going from 90% to 99% conversion costs an extra <b>${esc(fmtSmart(t99 - t90))}</b>.`
+      : '';
+  }
+
   const half = ctx.sched.time(0.5);
   const ninety = ctx.sched.time(0.9);
   say(`Half life ${fmtSmart(half)}, 90 percent conversion at ${fmtSmart(ninety)}.`);
@@ -441,8 +480,8 @@ const renderReadouts = (ctx) => {
 
 const renderTemperaturePanel = (ctx) => {
   const unit = unitLabel(state.tempUnit);
-  const measuredAt = fmtTrim(fromKelvin(state.Tmeasure, state.tempUnit));
-  const predictAt = fmtTrim(fromKelvin(state.Tpredict, state.tempUnit));
+  const measuredAt = fmtTemp(fromKelvin(state.Tmeasure, state.tempUnit));
+  const predictAt = fmtTemp(fromKelvin(state.Tpredict, state.tempUnit));
   const ratio = arrheniusRatio(state.Ea, state.Tmeasure, state.Tpredict);
 
   const ninetyNow = ctx.sched.time(0.9);
@@ -458,13 +497,28 @@ const renderTemperaturePanel = (ctx) => {
           `90% conversion to <b>${esc(fmtSmart(ninetyNow))}</b>; unswitched it takes ` +
           `<b>${esc(fmtSmart(ninetyThen))}</b>.`
         : `At ${esc(predictAt)} ${esc(unit)} the reaction runs ` +
-          `<b>${esc(fmtNum(ratio > 1 ? ratio : 1 / ratio))}x ${ratio > 1 ? 'faster' : 'slower'}</b> ` +
+          `<b>${esc(fmtFactor(ratio > 1 ? ratio : 1 / ratio))}x ${ratio > 1 ? 'faster' : 'slower'}</b> ` +
           `than at ${esc(measuredAt)} ${esc(unit)}. 90% conversion arrives at ` +
           `<b>${esc(fmtSmart(ninetyNow))}</b> instead of ` +
           `<b>${esc(fmtSmart(ninetyThen))}</b>.`;
 
+  // Item 5: no jargon label, the quantity named, the step unit unmistakable, and
+  // the reference temperature stated, because the Arrhenius factor is not constant
+  // across the range.
   const perTen = q10(state.Ea, state.Tmeasure);
-  writeValue($('q10-value'), `${fmtNum(perTen)}x per 10 K`, { numeric: perTen });
+  const stepLabel =
+    state.tempUnit === 'K'
+      ? '10 K (= 10 \u00B0C)'
+      : state.tempUnit === 'F'
+        ? '18 \u00B0F (a 10 \u00B0C step)'
+        : '10 \u00B0C';
+  const perTenEl = $('rate-per-ten');
+  if (perTenEl) {
+    perTenEl.textContent = Number.isFinite(perTen)
+      ? `The rate constant increases by a factor of about ${fmtFactor(perTen)} for every ` +
+        `${stepLabel} increase in temperature, near ${measuredAt} ${unit}.`
+      : '';
+  }
 
   const badge = $('ea-badge');
   if (badge) badge.style.display = state.eaMeasured ? 'none' : '';
@@ -499,7 +553,7 @@ const renderTemperaturePanel = (ctx) => {
   ]) {
     if (lo < K && hi > K) {
       cautions.push(
-        `The prediction crosses ${fmtTrim(fromKelvin(K, state.tempUnit))} ${unit}. In a typical ` +
+        `The prediction crosses ${fmtTemp(fromKelvin(K, state.tempUnit))} ${unit}. In a typical ` +
           `aqueous system a phase change at ${what} would invalidate this model entirely.`,
       );
     }
